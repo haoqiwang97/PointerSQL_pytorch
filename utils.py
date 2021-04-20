@@ -1,43 +1,204 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Apr 18 15:01:58 2021
+from typing import List
+import numpy as np
 
-@author: haoqiwang
-"""
+class Indexer(object):
+    """
+    Bijection between objects and integers starting at 0. Useful for mapping
+    labels, features, etc. into coordinates of a vector space.
 
-# import os
-from typing import List, Tuple
+    Attributes:
+        objs_to_ints
+        ints_to_objs
+    """
+    def __init__(self):
+        self.objs_to_ints = {}
+        self.ints_to_objs = {}
 
-# train_file = 'data/wikisql_dev.dat'
+    def __repr__(self):
+        return str([str(self.get_object(i)) for i in range(0, len(self))])
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __len__(self):
+        return len(self.objs_to_ints)
+
+    def get_object(self, index):
+        """
+        :param index: integer index to look up
+        :return: Returns the object corresponding to the particular index or None if not found
+        """
+        if (index not in self.ints_to_objs):
+            return None
+        else:
+            return self.ints_to_objs[index]
+
+    def contains(self, object):
+        """
+        :param object: object to look up
+        :return: Returns True if it is in the Indexer, False otherwise
+        """
+        return self.index_of(object) != -1
+
+    def index_of(self, object):
+        """
+        :param object: object to look up
+        :return: Returns -1 if the object isn't present, index otherwise
+        """
+        if (object not in self.objs_to_ints):
+            return -1
+        else:
+            return self.objs_to_ints[object]
+
+    def add_and_get_index(self, object, add=True):
+        """
+        Adds the object to the index if it isn't present, always returns a nonnegative index
+        :param object: object to look up or add
+        :param add: True by default, False if we shouldn't add the object. If False, equivalent to index_of.
+        :return: The index of the object
+        """
+        if not add:
+            return self.index_of(object)
+        if (object not in self.objs_to_ints):
+            new_idx = len(self.objs_to_ints)
+            self.objs_to_ints[object] = new_idx
+            self.ints_to_objs[new_idx] = object
+        return self.objs_to_ints[object]
 
 
-def load_datasets(train_path: str, dev_path: str, test_path: str) -> (List[Tuple[str, str, str]], List[Tuple[str, str]], List[Tuple[str, str]]):
-    train_raw = load_dataset(train_path)
-    dev_raw = load_dataset(dev_path)
-    test_raw = load_dataset(test_path)
-    return train_raw, dev_raw, test_raw
+class Beam(object):
+    """
+    Beam data structure. Maintains a list of scored elements like a Counter, but only keeps the top n
+    elements after every insertion operation. Insertion is O(n) (list is maintained in
+    sorted order), access is O(1). Still fast enough for practical purposes for small beams.
+    """
+    def __init__(self, size):
+        self.size = size
+        self.elts = []
+        self.scores = []
+
+    def __repr__(self):
+        return "Beam(" + repr(list(self.get_elts_and_scores())) + ")"
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __len__(self):
+        return len(self.elts)
+
+    def add(self, elt, score):
+        """
+        Adds the element to the beam with the given score if the beam has room or if the score
+        is better than the score of the worst element currently on the beam
+
+        :param elt: element to add
+        :param score: score corresponding to the element
+        """
+        if len(self.elts) == self.size and score < self.scores[-1]:
+            # Do nothing because this element is the worst
+            return
+        # If the list contains the item with a lower score, remove it
+        i = 0
+        while i < len(self.elts):
+            if self.elts[i] == elt and score > self.scores[i]:
+                del self.elts[i]
+                del self.scores[i]
+            i += 1
+        # If the list is empty, just insert the item
+        if len(self.elts) == 0:
+            self.elts.insert(0, elt)
+            self.scores.insert(0, score)
+        # Find the insertion point with binary search
+        else:
+            lb = 0
+            ub = len(self.scores) - 1
+            # We're searching for the index of the first element with score less than score
+            while lb < ub:
+                m = (lb + ub) // 2
+                # Check > because the list is sorted in descending order
+                if self.scores[m] > score:
+                    # Put the lower bound ahead of m because all elements before this are greater
+                    lb = m + 1
+                else:
+                    # m could still be the insertion point
+                    ub = m
+            # lb and ub should be equal and indicate the index of the first element with score less than score.
+            # Might be necessary to insert at the end of the list.
+            if self.scores[lb] > score:
+                self.elts.insert(lb + 1, elt)
+                self.scores.insert(lb + 1, score)
+            else:
+                self.elts.insert(lb, elt)
+                self.scores.insert(lb, score)
+            # Drop and item from the beam if necessary
+            if len(self.scores) > self.size:
+                self.elts.pop()
+                self.scores.pop()
+
+    def get_elts(self):
+        return self.elts
+
+    def get_elts_and_scores(self):
+        return zip(self.elts, self.scores)
+
+    def head(self):
+        return self.elts[0]
 
 
-def load_dataset(filename: str) -> List[Tuple[str, str, str]]:
-    dataset = []
-    with open(filename) as f:
-        raw_lines = f.readlines()
-        n_lines = len(raw_lines)
-        # each example takes 4 lines
-        # 1st, table and column names, eg, raw_lines[0]='1-10015132-11 player no. nationality position years^in^toronto school/club^team\n'
-        # 2nd, query, eg, raw_lines[1]='what position does the player who played for school/club^team butler^cc^(ks) play ?\n'
-        # 3rd, y, ground truth, eg, raw_lines[2]='1-10015132-11 select position school/club^team = butler^cc^(ks)\n'
-        # 4th, '\n', empty, eg, raw_lines[3]='\n'
-        n_examples = n_lines // 4
-        for example_idx in range(n_examples):
-            table_column_name = raw_lines[example_idx * 4].strip('\n')
-            query = raw_lines[example_idx * 4 + 1].strip('\n')
-            y = raw_lines[example_idx * 4 + 2].strip('\n')
-
-            dataset.append((table_column_name, query, y))
-    print("Loaded %i examples from file %s" % (n_examples, filename))
-    return dataset
+def maybe_add_feature(feats: List[int], feature_indexer: Indexer, add_to_indexer: bool, feat: str):
+    """
+    :param feats: list[int] features that we've built so far
+    :param feature_indexer: Indexer object to apply
+    :param add_to_indexer: True if we should expand the Indexer, false otherwise. If false, we discard feat if it isn't
+    in the indexer
+    :param feat: new feature to index and potentially add
+    :return:
+    """
+    if add_to_indexer:
+        feats.append(feature_indexer.add_and_get_index(feat))
+    else:
+        feat_idx = feature_indexer.index_of(feat)
+        if feat_idx != -1:
+            feats.append(feat_idx)
 
 
-# TODO: index data
+def score_indexed_features(feats, weights: np.ndarray):
+    """
+    Computes the dot product over a list of features (i.e., a sparse feature vector)
+    and a weight vector (numpy array)
+    :param feats: List[int] or numpy array of int features
+    :param weights: numpy array
+    :return: the score
+    """
+    score = 0.0
+    for feat in feats:
+        score += weights[feat]
+    return score
+
+
+def test_beam():
+    print("TESTING BEAM")
+    beam = Beam(3)
+    beam.add("a", 5)
+    beam.add("b", 7)
+    beam.add("c", 6)
+    beam.add("d", 4)
+    print("Should contain b, c, a: %s" % beam)
+    beam.add("e", 8)
+    beam.add("f", 6.5)
+    print("Should contain e, b, f: %s" % beam)
+    beam.add("f", 9.5)
+    print("Should contain f, e, b: %s" % beam)
+
+    beam = Beam(5)
+    beam.add("a", 5)
+    beam.add("b", 7)
+    beam.add("c", 6)
+    beam.add("d", 4)
+    print("Should contain b, c, a, d: %s" % beam)
+    beam.add("e", 8)
+    beam.add("f", 6.5)
+    print("Should contain e, b, f, c, a: %s" % beam)
+
+if __name__ == '__main__':
+    test_beam()
