@@ -1,7 +1,7 @@
 from utils import *
 from typing import List, Tuple
 from collections import Counter
-
+import numpy as np
 
 class Example(object):
     """
@@ -63,6 +63,59 @@ def load_dataset(filename: str) -> List[Tuple[str, str]]:
     return dataset
 
 
+class WordEmbeddings:
+    """
+    Wraps an Indexer and a list of 1-D numpy arrays where each position in the list is the vector for the corresponding
+    word in the indexer. The 0 vector is returned if an unknown word is queried.
+    """
+    def __init__(self, word_indexer, vectors):
+        self.word_indexer = word_indexer
+        self.vectors = vectors
+
+    def get_embedding_length(self):
+        return len(self.vectors[0])
+
+    def get_embedding(self, word):
+        """
+        Returns the embedding for a given word
+        :param word: The word to look up
+        :return: The UNK vector if the word is not in the Indexer or the vector otherwise
+        """
+        word_idx = self.word_indexer.index_of(word)
+        if word_idx != -1:
+            return self.vectors[word_idx]
+        else:
+            return self.vectors[self.word_indexer.index_of("UNK")]
+        
+        
+def load_word_vecs(word_vecs_filename: str):
+    f = open(word_vecs_filename)
+    word_indexer = Indexer()
+    vectors = []
+    # Make position 0 a PAD token, which can be useful if you
+    word_indexer.add_and_get_index("PAD")
+    # Make position 1 the UNK token
+    word_indexer.add_and_get_index("UNK")
+    for line in f:
+        if line.strip() != "":
+            space_idx = line.find(' ')
+            word = line[:space_idx]
+            numbers = line[space_idx+1:]
+            float_numbers = [float(number_str) for number_str in numbers.split()]
+            vector = np.array(float_numbers)
+            word_indexer.add_and_get_index(word)
+            # Append the PAD and UNK vectors to start. Have to do this weirdly because we need to read the first line
+            # of the file to see what the embedding dim is
+            if len(vectors) == 0:
+                vectors.append(np.zeros(vector.shape[0]))
+                vectors.append(np.zeros(vector.shape[0]))
+            vectors.append(vector)
+    f.close()
+    print("Read in " + repr(len(word_indexer)) + " vectors of size " + repr(vectors[0].shape[0]))
+    # Turn vectors into a 2-D numpy array
+    return WordEmbeddings(word_indexer, np.array(vectors))
+    
+
 def tokenize(x) -> List[str]:
     """
     :param x: string to tokenize
@@ -93,7 +146,7 @@ def index_data(data, input_indexer: Indexer, output_indexer: Indexer, example_le
     return data_indexed
 
 
-def index_datasets(train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0) -> (List[Example], List[Example], List[Example], Indexer, Indexer):
+def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0) -> (List[Example], List[Example], List[Example], Indexer, Indexer):
     """
     Indexes train and test datasets where all words occurring less than or equal to unk_threshold times are
     replaced by UNK tokens.
@@ -110,18 +163,33 @@ def index_datasets(train_data, dev_data, test_data, example_len_limit, unk_thres
     for (x, y) in train_data:
         for word in tokenize(x):
             input_word_counts[word] += 1.0
-    input_indexer = Indexer()
-    output_indexer = Indexer()
+
+    input_indexer = word_vectors.word_indexer#Indexer()
+    output_indexer = word_vectors.word_indexer#Indexer()#
+                
     # Reserve 0 for the pad symbol for convenience
     input_indexer.add_and_get_index(PAD_SYMBOL)
     input_indexer.add_and_get_index(UNK_SYMBOL)
     output_indexer.add_and_get_index(PAD_SYMBOL)
     output_indexer.add_and_get_index(SOS_SYMBOL)
     output_indexer.add_and_get_index(EOS_SYMBOL)
-    # Index all input words above the UNK threshold
-    for word in input_word_counts.keys():
-        if input_word_counts[word] > unk_threshold + 0.5:
-            input_indexer.add_and_get_index(word)
+    
+    # for (x, y) in train_data:
+    #     # X_onehot_ = []
+    #     for word in tokenize(x):
+    #         if word_vectors.word_indexer.contains(word): # if contain, retrive index
+    #             X_onehot_.append(word_vectors.word_indexer.index_of(word))
+    #         else: # TODO: if not, see the count, if large, add, but the word vector size should change, this is confusing, need to know details in the paper
+    #             # if input_word_counts[word] > unk_threshold + 0.5:
+    #             #     input_indexer.add_and_get_index(word)
+    #             #     X_onehot_.append(word_vectors.word_indexer.index_of(word))
+    #             # X_onehot_.append(1)
+    #             pass
+            
+    # # Index all input words above the UNK threshold
+    # for word in input_word_counts.keys():
+    #     if input_word_counts[word] > unk_threshold + 0.5:
+    #         input_indexer.add_and_get_index(word)
     # Index all output tokens in train
     for (x, y) in train_data:
         for y_tok in tokenize(y):
@@ -160,3 +228,33 @@ def load_dataset2(filename: str) -> List[Tuple[str, str, str]]:
             dataset.append((table_column_name, query, y))
     print("Loaded %i examples from file %s" % (n_examples, filename))
     return dataset
+
+def make_padded_input_tensor(exs: List[Example], input_indexer: Indexer, max_len: int, reverse_input=False) -> np.ndarray:
+    """
+    Takes the given Examples and their input indexer and turns them into a numpy array by padding them out to max_len.
+    Optionally reverses them.
+    :param exs: examples to tensor-ify
+    :param input_indexer: Indexer over input symbols; needed to get the index of the pad symbol
+    :param max_len: max input len to use (pad/truncate to this length)
+    :param reverse_input: True if we should reverse the inputs (useful if doing a unidirectional LSTM encoder)
+    :return: A [num example, max_len]-size array of indices of the input tokens
+    """
+    if reverse_input:
+        return np.array(
+            [[ex.x_indexed[len(ex.x_indexed) - 1 - i] if i < len(ex.x_indexed) else input_indexer.index_of(PAD_SYMBOL)
+              for i in range(0, max_len)]
+             for ex in exs])
+    else:
+        return np.array([[ex.x_indexed[i] if i < len(ex.x_indexed) else input_indexer.index_of(PAD_SYMBOL)
+                          for i in range(0, max_len)]
+                         for ex in exs])
+
+def make_padded_output_tensor(exs, output_indexer, max_len):
+    """
+    Similar to make_padded_input_tensor, but does it on the outputs without the option to reverse input
+    :param exs:
+    :param output_indexer:
+    :param max_len:
+    :return: A [num example, max_len]-size array of indices of the output tokens
+    """
+    return np.array([[ex.y_indexed[i] if i < len(ex.y_indexed) else output_indexer.index_of(PAD_SYMBOL) for i in range(0, max_len)] for ex in exs])
