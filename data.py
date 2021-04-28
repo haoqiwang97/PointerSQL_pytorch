@@ -3,6 +3,7 @@ from typing import List, Tuple
 from collections import Counter
 import numpy as np
 
+
 class Example(object):
     """
     Wrapper class for a single (natural language, logical form) input/output (x/y) pair
@@ -14,28 +15,61 @@ class Example(object):
         y_tok: tokenized logical form, a list of strings
         y_indexed: indexed logical form, a list of ints
     """
-    def __init__(self, x: str, x_tok: List[str], x_indexed: List[int], y, y_tok, y_indexed):
+
+    def __init__(self, x: str, x_tok: List[str], x_indexed: List[int], y, y_tok, y_indexed, header_length):
         self.x = x
         self.x_tok = x_tok
         self.x_indexed = x_indexed
         self.y = y
         self.y_tok = y_tok
         self.y_indexed = y_indexed
+        self.header_length = header_length
+        self.tok_to_idx = Counter()
+        for idx, tok in enumerate(x_tok):
+            self.tok_to_idx[tok] = idx
+        self.copy_indexer = Indexer()
+        for tok in self.tok_to_idx.keys():
+            self.copy_indexer.add_and_get_index(tok)
 
     def __repr__(self):
-        return " ".join(self.x_tok) + " => " + " ".join(self.y_tok) + "\n   indexed as: " + repr(self.x_indexed) + " => " + repr(self.y_indexed)
+        return " ".join(self.x_tok) + " => " + " ".join(self.y_tok) + "\n   indexed as: " + repr(
+            self.x_indexed) + " => " + repr(self.y_indexed)
 
     def __str__(self):
         return self.__repr__()
-    
-    
+
+
+class Derivation(object):
+    """
+    Wrapper for a possible solution returned by the model associated with an Example. Note that y_toks here is a
+    predicted y_toks, and the Example itself contains the gold y_toks.
+    Attributes:
+          example: The underlying Example we're predicting on
+          p: the probability associated with this prediction
+          y_toks: the tokenized output prediction
+    """
+
+    def __init__(self, example: Example, p, y_toks):
+        self.example = example
+        self.p = p
+        self.y_toks = y_toks
+
+    def __str__(self):
+        return "%s (%s)" % (self.y_toks, self.p)
+
+    def __repr__(self):
+        return self.__str__()
+
+
 PAD_SYMBOL = "<PAD>"
 UNK_SYMBOL = "<UNK>"
 SOS_SYMBOL = "<SOS>"
 EOS_SYMBOL = "<EOS>"
+GO_SYMBOL = "<GO>"
 
-    
-def load_datasets(train_path: str, dev_path: str, test_path: str) -> (List[Tuple[str, str]], List[Tuple[str, str]], List[Tuple[str, str]]):
+
+def load_datasets(train_path: str, dev_path: str, test_path: str) -> (
+        List[Tuple[str, str]], List[Tuple[str, str]], List[Tuple[str, str]]):
     train_raw = load_dataset(train_path)
     dev_raw = load_dataset(dev_path)
     test_raw = load_dataset(test_path)
@@ -68,6 +102,7 @@ class WordEmbeddings:
     Wraps an Indexer and a list of 1-D numpy arrays where each position in the list is the vector for the corresponding
     word in the indexer. The 0 vector is returned if an unknown word is queried.
     """
+
     def __init__(self, word_indexer, vectors):
         self.word_indexer = word_indexer
         self.vectors = vectors
@@ -86,8 +121,8 @@ class WordEmbeddings:
             return self.vectors[word_idx]
         else:
             return self.vectors[self.word_indexer.index_of("UNK")]
-        
-        
+
+
 def load_word_vecs(word_vecs_filename: str):
     f = open(word_vecs_filename)
     word_indexer = Indexer()
@@ -100,7 +135,7 @@ def load_word_vecs(word_vecs_filename: str):
         if line.strip() != "":
             space_idx = line.find(' ')
             word = line[:space_idx]
-            numbers = line[space_idx+1:]
+            numbers = line[space_idx + 1:]
             float_numbers = [float(number_str) for number_str in numbers.split()]
             vector = np.array(float_numbers)
             word_indexer.add_and_get_index(word)
@@ -114,7 +149,7 @@ def load_word_vecs(word_vecs_filename: str):
     print("Read in " + repr(len(word_indexer)) + " vectors of size " + repr(vectors[0].shape[0]))
     # Turn vectors into a 2-D numpy array
     return WordEmbeddings(word_indexer, np.array(vectors))
-    
+
 
 def tokenize(x) -> List[str]:
     """
@@ -142,11 +177,12 @@ def index_data(data, input_indexer: Indexer, output_indexer: Indexer, example_le
         x_tok = tokenize(x)
         y_tok = tokenize(y)[0:example_len_limit]
         data_indexed.append(Example(x, x_tok, index(x_tok, input_indexer), y, y_tok,
-                                          index(y_tok, output_indexer) + [output_indexer.index_of(EOS_SYMBOL)]))
+                                    index(y_tok, output_indexer) + [output_indexer.index_of(EOS_SYMBOL)]))
     return data_indexed
 
 
-def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0) -> (List[Example], List[Example], List[Example], Indexer, Indexer):
+def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0) -> (
+        List[Example], List[Example], List[Example], Indexer, Indexer):
     """
     Indexes train and test datasets where all words occurring less than or equal to unk_threshold times are
     replaced by UNK tokens.
@@ -164,16 +200,16 @@ def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_li
         for word in tokenize(x):
             input_word_counts[word] += 1.0
 
-    input_indexer = word_vectors.word_indexer#Indexer()
-    output_indexer = word_vectors.word_indexer#Indexer()#
-                
+    input_indexer = word_vectors.word_indexer  # Indexer()
+    output_indexer = word_vectors.word_indexer  # Indexer()#
+
     # Reserve 0 for the pad symbol for convenience
     input_indexer.add_and_get_index(PAD_SYMBOL)
     input_indexer.add_and_get_index(UNK_SYMBOL)
     output_indexer.add_and_get_index(PAD_SYMBOL)
     output_indexer.add_and_get_index(SOS_SYMBOL)
     output_indexer.add_and_get_index(EOS_SYMBOL)
-    
+
     # for (x, y) in train_data:
     #     # X_onehot_ = []
     #     for word in tokenize(x):
@@ -185,7 +221,7 @@ def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_li
     #             #     X_onehot_.append(word_vectors.word_indexer.index_of(word))
     #             # X_onehot_.append(1)
     #             pass
-            
+
     # # Index all input words above the UNK threshold
     # for word in input_word_counts.keys():
     #     if input_word_counts[word] > unk_threshold + 0.5:
@@ -201,7 +237,8 @@ def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_li
     return train_data_indexed, dev_data_indexed, test_data_indexed, input_indexer, output_indexer
 
 
-def load_datasets2(train_path: str, dev_path: str, test_path: str) -> (List[Tuple[str, str, str]], List[Tuple[str, str, str]], List[Tuple[str, str, str]]):
+def load_datasets2(train_path: str, dev_path: str, test_path: str) -> (
+        List[Tuple[str, str, str]], List[Tuple[str, str, str]], List[Tuple[str, str, str]]):
     # load_datasets2 does not concatenate table column names and query
     train_raw = load_dataset2(train_path)
     dev_raw = load_dataset2(dev_path)
@@ -229,7 +266,9 @@ def load_dataset2(filename: str) -> List[Tuple[str, str, str]]:
     print("Loaded %i examples from file %s" % (n_examples, filename))
     return dataset
 
-def make_padded_input_tensor(exs: List[Example], input_indexer: Indexer, max_len: int, reverse_input=False) -> np.ndarray:
+
+def make_padded_input_tensor(exs: List[Example], input_indexer: Indexer, max_len: int,
+                             reverse_input=False) -> np.ndarray:
     """
     Takes the given Examples and their input indexer and turns them into a numpy array by padding them out to max_len.
     Optionally reverses them.
@@ -249,6 +288,7 @@ def make_padded_input_tensor(exs: List[Example], input_indexer: Indexer, max_len
                           for i in range(0, max_len)]
                          for ex in exs])
 
+
 def make_padded_output_tensor(exs, output_indexer, max_len):
     """
     Similar to make_padded_input_tensor, but does it on the outputs without the option to reverse input
@@ -257,4 +297,6 @@ def make_padded_output_tensor(exs, output_indexer, max_len):
     :param max_len:
     :return: A [num example, max_len]-size array of indices of the output tokens
     """
-    return np.array([[ex.y_indexed[i] if i < len(ex.y_indexed) else output_indexer.index_of(PAD_SYMBOL) for i in range(0, max_len)] for ex in exs])
+    return np.array(
+        [[ex.y_indexed[i] if i < len(ex.y_indexed) else output_indexer.index_of(PAD_SYMBOL) for i in range(0, max_len)]
+         for ex in exs])
