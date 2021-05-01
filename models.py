@@ -99,7 +99,7 @@ class Seq2Seq(nn.Module):
                                                                            enc_output_each_word)
 
             decoder_outputs[di] = (decoder_output, type)
-
+            # decoder_outputs[di] = decoder_output
         return decoder_outputs
 
     def decode(self, test_data: List[Example]) -> List[List[Derivation]]:
@@ -309,14 +309,20 @@ class Attention(nn.Module):
         self.linear = nn.Linear(hidden_size * 2, hidden_size)
 
     def forward(self, hidden, encoder_outputs):
-        values = self.linear(encoder_outputs.squeeze(0)).unsqueeze(0)
-        attn_logits = hidden.bmm(values.transpose(1, 2))
+        # values = self.linear(encoder_outputs.squeeze(0)).unsqueeze(0)
+        # attn_logits = hidden.bmm(values.transpose(1, 2))
+        values = self.linear(encoder_outputs.squeeze(0))
+        attn_logits = hidden.bmm(values.transpose(0, 1).transpose(1, 2))
+        
         attn_weights = F.softmax(attn_logits, dim=-1)
-        context = attn_weights.bmm(values)
+        # context = attn_weights.bmm(values)
+        context = attn_weights.bmm(values.transpose(0,1))
 
         return attn_weights, context
-
-
+# values2 = self.linear(encoder_outputs.squeeze(0))
+# values3 = values2.transpose(1, 2)
+# temp = values.transpose(1, 2)
+# temp = values2.transpose(0, 1).transpose(1, 2)
 class Decoder(nn.Module):
     def __init__(self, input_size: int, hidden_size: int, output_size: int):
         """
@@ -413,9 +419,9 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
         for ex_idx in ex_indices:
             sample = train_data[ex_idx]
             # sample = all_train_input_data[ex_idx]
-            x_tensor = torch.tensor(sample.x_indexed)
+            x_tensor = torch.tensor(sample.x_indexed).unsqueeze(0)
             inp_lens_tensor = torch.tensor([len(sample.x_indexed)])
-            y_tensor = torch.tensor(sample.y_indexed)
+            y_tensor = torch.tensor(sample.y_indexed).unsqueeze(0)
             out_lens_tensor = torch.tensor([len(sample.y_indexed)])
             optimizer.zero_grad()
             decoder_outputs = seq2seq.forward(x_tensor, inp_lens_tensor, y_tensor, out_lens_tensor)
