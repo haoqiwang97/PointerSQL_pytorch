@@ -38,6 +38,32 @@ class Example(object):
     def __str__(self):
         return self.__repr__()
 
+# class Example(object):
+#     """
+#     Wrapper class for a single (natural language, logical form) input/output (x/y) pair
+#     Attributes:
+#         x: the natural language as one string
+#         x_tok: tokenized natural language as a list of strings
+#         x_indexed: indexed tokens, a list of ints
+#         y: the raw logical form as a string
+#         y_tok: tokenized logical form, a list of strings
+#         y_indexed: indexed logical form, a list of ints
+#     """
+#     def __init__(self, x: str, x_tok: List[str], x_indexed: List[int], y, y_tok, y_indexed):
+#         self.x = x
+#         self.x_tok = x_tok
+#         self.x_indexed = x_indexed
+#         self.y = y
+#         self.y_tok = y_tok
+#         self.y_indexed = y_indexed
+
+#     def __repr__(self):
+#         return " ".join(self.x_tok) + " => " + " ".join(self.y_tok) + "\n   indexed as: " + repr(self.x_indexed) + " => " + repr(self.y_indexed)
+
+#     def __str__(self):
+#         return self.__repr__()
+    
+    
 
 class Derivation(object):
     """
@@ -76,7 +102,7 @@ def load_datasets(train_path: str, dev_path: str, test_path: str) -> (
     return train_raw, dev_raw, test_raw
 
 
-def load_dataset(filename: str) -> List[Tuple[str, str]]:
+def load_dataset(filename: str) -> List[Tuple[str, str, int]]:
     dataset = []
     with open(filename) as f:
         raw_lines = f.readlines()
@@ -91,10 +117,31 @@ def load_dataset(filename: str) -> List[Tuple[str, str]]:
             table_column_name = raw_lines[example_idx * 4].strip('\n')
             query = raw_lines[example_idx * 4 + 1].strip('\n')
             y = raw_lines[example_idx * 4 + 2].strip('\n')
-
-            dataset.append((table_column_name + ' ' + query, y))
+            # len(table_column_name)# len(query)
+            # len(table_column_name.split())
+            dataset.append((table_column_name + ' ' + query, y, len(table_column_name.split())))
     print("Loaded %i examples from file %s" % (n_examples, filename))
     return dataset
+
+# def load_dataset(filename: str) -> List[Tuple[str, str]]:
+#     dataset = []
+#     with open(filename) as f:
+#         raw_lines = f.readlines()
+#         n_lines = len(raw_lines)
+#         # each example takes 4 lines
+#         # 1st, table and column names, eg, raw_lines[0]='1-10015132-11 player no. nationality position years^in^toronto school/club^team\n'
+#         # 2nd, query, eg, raw_lines[1]='what position does the player who played for school/club^team butler^cc^(ks) play ?\n'
+#         # 3rd, y, ground truth, eg, raw_lines[2]='1-10015132-11 select position school/club^team = butler^cc^(ks)\n'
+#         # 4th, '\n', empty, eg, raw_lines[3]='\n'
+#         n_examples = n_lines // 4
+#         for example_idx in range(n_examples):
+#             table_column_name = raw_lines[example_idx * 4].strip('\n')
+#             query = raw_lines[example_idx * 4 + 1].strip('\n')
+#             y = raw_lines[example_idx * 4 + 2].strip('\n')
+
+#             dataset.append((table_column_name + ' ' + query, y))
+#     print("Loaded %i examples from file %s" % (n_examples, filename))
+#     return dataset
 
 
 class WordEmbeddings:
@@ -173,16 +220,15 @@ def index_data(data, input_indexer: Indexer, output_indexer: Indexer, example_le
     :return:
     """
     data_indexed = []
-    for (x, y) in data:
+    for (x, y, z) in data: # data[1] = ('1-1000181-1 state/territory text/background^colour format current^slogan current^series notes what is the current^series where the notes new^series^began^in^june^2011 ?', '1-1000181-1 select current^series notes = new^series^began^in^june^2011', 7)
         x_tok = tokenize(x)
         y_tok = tokenize(y)[0:example_len_limit]
         data_indexed.append(Example(x, x_tok, index(x_tok, input_indexer), y, y_tok,
-                                    index(y_tok, output_indexer) + [output_indexer.index_of(EOS_SYMBOL)]))
+                                    index(y_tok, output_indexer) + [output_indexer.index_of(EOS_SYMBOL)], z))
     return data_indexed
 
 
-def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0) -> (
-        List[Example], List[Example], List[Example], Indexer, Indexer):
+def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0, use_pretrained = True) -> (List[Example], List[Example], List[Example], Indexer, Indexer):
     """
     Indexes train and test datasets where all words occurring less than or equal to unk_threshold times are
     replaced by UNK tokens.
@@ -195,39 +241,40 @@ def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_li
     :return:
     """
     input_word_counts = Counter()
-    # Count words and build the indexers
-    for (x, y) in train_data:
-        for word in tokenize(x):
-            input_word_counts[word] += 1.0
+            
+    if use_pretrained == True:
+        input_indexer = word_vectors.word_indexer  # Indexer()
+        output_indexer = word_vectors.word_indexer  # Indexer()#
+        
+        input_indexer.add_and_get_index(PAD_SYMBOL)
+        input_indexer.add_and_get_index(UNK_SYMBOL)
+        output_indexer.add_and_get_index(PAD_SYMBOL)
+        output_indexer.add_and_get_index(SOS_SYMBOL)
+        output_indexer.add_and_get_index(EOS_SYMBOL)
+    
+    else:
+        # Count words and build the indexers
+        for (x, y, z) in train_data:
+            for word in tokenize(x):
+                input_word_counts[word] += 1.0
+            
+        input_indexer = Indexer()
+        output_indexer = Indexer()
+        
+        # Reserve 0 for the pad symbol for convenience
+        input_indexer.add_and_get_index(PAD_SYMBOL)
+        input_indexer.add_and_get_index(UNK_SYMBOL)
+        output_indexer.add_and_get_index(PAD_SYMBOL)
+        output_indexer.add_and_get_index(SOS_SYMBOL)
+        output_indexer.add_and_get_index(EOS_SYMBOL)
 
-    input_indexer = word_vectors.word_indexer  # Indexer()
-    output_indexer = word_vectors.word_indexer  # Indexer()#
+        # Index all input words above the UNK threshold
+        for word in input_word_counts.keys():
+            if input_word_counts[word] > unk_threshold + 0.5:
+                input_indexer.add_and_get_index(word)        
 
-    # Reserve 0 for the pad symbol for convenience
-    input_indexer.add_and_get_index(PAD_SYMBOL)
-    input_indexer.add_and_get_index(UNK_SYMBOL)
-    output_indexer.add_and_get_index(PAD_SYMBOL)
-    output_indexer.add_and_get_index(SOS_SYMBOL)
-    output_indexer.add_and_get_index(EOS_SYMBOL)
-
-    # for (x, y) in train_data:
-    #     # X_onehot_ = []
-    #     for word in tokenize(x):
-    #         if word_vectors.word_indexer.contains(word): # if contain, retrive index
-    #             X_onehot_.append(word_vectors.word_indexer.index_of(word))
-    #         else: # TODO: if not, see the count, if large, add, but the word vector size should change, this is confusing, need to know details in the paper
-    #             # if input_word_counts[word] > unk_threshold + 0.5:
-    #             #     input_indexer.add_and_get_index(word)
-    #             #     X_onehot_.append(word_vectors.word_indexer.index_of(word))
-    #             # X_onehot_.append(1)
-    #             pass
-
-    # # Index all input words above the UNK threshold
-    # for word in input_word_counts.keys():
-    #     if input_word_counts[word] > unk_threshold + 0.5:
-    #         input_indexer.add_and_get_index(word)
     # Index all output tokens in train
-    for (x, y) in train_data:
+    for (x, y, z) in train_data:
         for y_tok in tokenize(y):
             output_indexer.add_and_get_index(y_tok)
     # Index things
