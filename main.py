@@ -55,6 +55,6 @@ if __name__ == '__main__':
     
     # n_gram = load_n_gram(args.n_gram_path)
 
-    decoder = train_model(train_data_indexed, dev_data_indexed, input_indexer, output_indexer, args)
+    decoder = train_model(word_vectors, train_data_indexed, dev_data_indexed, input_indexer, output_indexer, args)
 
 # TODO: maintain a small built-in decoder vocabulary (sized 17)
