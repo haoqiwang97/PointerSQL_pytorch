@@ -4,6 +4,40 @@ from collections import Counter
 import numpy as np
 
 
+# class Example(object):
+#     """
+#     Wrapper class for a single (natural language, logical form) input/output (x/y) pair
+#     Attributes:
+#         x: the natural language as one string
+#         x_tok: tokenized natural language as a list of strings
+#         x_indexed: indexed tokens, a list of ints
+#         y: the raw logical form as a string
+#         y_tok: tokenized logical form, a list of strings
+#         y_indexed: indexed logical form, a list of ints
+#     """
+
+#     def __init__(self, x: str, x_tok: List[str], x_indexed: List[int], y, y_tok, y_indexed, header_length):
+#         self.x = x
+#         self.x_tok = x_tok
+#         self.x_indexed = x_indexed
+#         self.y = y
+#         self.y_tok = y_tok
+#         self.y_indexed = y_indexed
+#         self.header_length = header_length
+#         self.tok_to_idx = Counter()
+#         for idx, tok in enumerate(x_tok):
+#             self.tok_to_idx[tok] = idx
+#         self.copy_indexer = Indexer()
+#         for tok in self.tok_to_idx.keys():
+#             self.copy_indexer.add_and_get_index(tok)
+
+#     def __repr__(self):
+#         return " ".join(self.x_tok) + " => " + " ".join(self.y_tok) + "\n   indexed as: " + repr(
+#             self.x_indexed) + " => " + repr(self.y_indexed)
+
+#     def __str__(self):
+#         return self.__repr__()
+
 class Example(object):
     """
     Wrapper class for a single (natural language, logical form) input/output (x/y) pair
@@ -15,29 +49,21 @@ class Example(object):
         y_tok: tokenized logical form, a list of strings
         y_indexed: indexed logical form, a list of ints
     """
-
-    def __init__(self, x: str, x_tok: List[str], x_indexed: List[int], y, y_tok, y_indexed, header_length):
+    def __init__(self, x: str, x_tok: List[str], x_indexed: List[int], y, y_tok, y_indexed):
         self.x = x
         self.x_tok = x_tok
         self.x_indexed = x_indexed
         self.y = y
         self.y_tok = y_tok
         self.y_indexed = y_indexed
-        self.header_length = header_length
-        self.tok_to_idx = Counter()
-        for idx, tok in enumerate(x_tok):
-            self.tok_to_idx[tok] = idx
-        self.copy_indexer = Indexer()
-        for tok in self.tok_to_idx.keys():
-            self.copy_indexer.add_and_get_index(tok)
 
     def __repr__(self):
-        return " ".join(self.x_tok) + " => " + " ".join(self.y_tok) + "\n   indexed as: " + repr(
-            self.x_indexed) + " => " + repr(self.y_indexed)
+        return " ".join(self.x_tok) + " => " + " ".join(self.y_tok) + "\n   indexed as: " + repr(self.x_indexed) + " => " + repr(self.y_indexed)
 
     def __str__(self):
         return self.__repr__()
-
+    
+    
 
 class Derivation(object):
     """
@@ -181,8 +207,7 @@ def index_data(data, input_indexer: Indexer, output_indexer: Indexer, example_le
     return data_indexed
 
 
-def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0, use_pretrained = False) -> (
-        List[Example], List[Example], List[Example], Indexer, Indexer):
+def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0, use_pretrained = True) -> (List[Example], List[Example], List[Example], Indexer, Indexer):
     """
     Indexes train and test datasets where all words occurring less than or equal to unk_threshold times are
     replaced by UNK tokens.
@@ -195,11 +220,7 @@ def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_li
     :return:
     """
     input_word_counts = Counter()
-    # Count words and build the indexers
-    for (x, y) in train_data:
-        for word in tokenize(x):
-            input_word_counts[word] += 1.0
-        
+            
     if use_pretrained == True:
         input_indexer = word_vectors.word_indexer  # Indexer()
         output_indexer = word_vectors.word_indexer  # Indexer()#
@@ -211,6 +232,11 @@ def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_li
         output_indexer.add_and_get_index(EOS_SYMBOL)
     
     else:
+        # Count words and build the indexers
+        for (x, y) in train_data:
+            for word in tokenize(x):
+                input_word_counts[word] += 1.0
+            
         input_indexer = Indexer()
         output_indexer = Indexer()
         
