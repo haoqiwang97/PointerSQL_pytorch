@@ -181,7 +181,7 @@ def index_data(data, input_indexer: Indexer, output_indexer: Indexer, example_le
     return data_indexed
 
 
-def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0) -> (
+def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0, use_pretrained = False) -> (
         List[Example], List[Example], List[Example], Indexer, Indexer):
     """
     Indexes train and test datasets where all words occurring less than or equal to unk_threshold times are
@@ -199,33 +199,33 @@ def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_li
     for (x, y) in train_data:
         for word in tokenize(x):
             input_word_counts[word] += 1.0
+        
+    if use_pretrained == True:
+        input_indexer = word_vectors.word_indexer  # Indexer()
+        output_indexer = word_vectors.word_indexer  # Indexer()#
+        
+        input_indexer.add_and_get_index(PAD_SYMBOL)
+        input_indexer.add_and_get_index(UNK_SYMBOL)
+        output_indexer.add_and_get_index(PAD_SYMBOL)
+        output_indexer.add_and_get_index(SOS_SYMBOL)
+        output_indexer.add_and_get_index(EOS_SYMBOL)
+    
+    else:
+        input_indexer = Indexer()
+        output_indexer = Indexer()
+        
+        # Reserve 0 for the pad symbol for convenience
+        input_indexer.add_and_get_index(PAD_SYMBOL)
+        input_indexer.add_and_get_index(UNK_SYMBOL)
+        output_indexer.add_and_get_index(PAD_SYMBOL)
+        output_indexer.add_and_get_index(SOS_SYMBOL)
+        output_indexer.add_and_get_index(EOS_SYMBOL)
 
-    input_indexer = word_vectors.word_indexer  # Indexer()
-    output_indexer = word_vectors.word_indexer  # Indexer()#
+        # Index all input words above the UNK threshold
+        for word in input_word_counts.keys():
+            if input_word_counts[word] > unk_threshold + 0.5:
+                input_indexer.add_and_get_index(word)        
 
-    # Reserve 0 for the pad symbol for convenience
-    input_indexer.add_and_get_index(PAD_SYMBOL)
-    input_indexer.add_and_get_index(UNK_SYMBOL)
-    output_indexer.add_and_get_index(PAD_SYMBOL)
-    output_indexer.add_and_get_index(SOS_SYMBOL)
-    output_indexer.add_and_get_index(EOS_SYMBOL)
-
-    # for (x, y) in train_data:
-    #     # X_onehot_ = []
-    #     for word in tokenize(x):
-    #         if word_vectors.word_indexer.contains(word): # if contain, retrive index
-    #             X_onehot_.append(word_vectors.word_indexer.index_of(word))
-    #         else: # TODO: if not, see the count, if large, add, but the word vector size should change, this is confusing, need to know details in the paper
-    #             # if input_word_counts[word] > unk_threshold + 0.5:
-    #             #     input_indexer.add_and_get_index(word)
-    #             #     X_onehot_.append(word_vectors.word_indexer.index_of(word))
-    #             # X_onehot_.append(1)
-    #             pass
-
-    # # Index all input words above the UNK threshold
-    # for word in input_word_counts.keys():
-    #     if input_word_counts[word] > unk_threshold + 0.5:
-    #         input_indexer.add_and_get_index(word)
     # Index all output tokens in train
     for (x, y) in train_data:
         for y_tok in tokenize(y):
