@@ -27,9 +27,10 @@ def add_models_args(parser):
 
     parser.add_argument('--decoder_len_limit', type=int, default=20, help='output length limit of the decoder')
     parser.add_argument('--emb_dim', type=int, default=200, help='word embedding dimensions')
+    parser.add_argument('--embedding_dropout', type=float, default=0.2, help='embedding layer dropout rate')
     parser.add_argument('--hidden_dim', type=int, default=100, help='hidden layer size')
     parser.add_argument('--n_layers', type=int, default=3, help='number of layers')
-
+    
 
 """
 # how did I choose decoder_len_limit=20
@@ -55,7 +56,7 @@ max(length_list2)
 
 
 class Seq2Seq(nn.Module):
-    def __init__(self, word_vectors, input_indexer, output_indexer, emb_dim, hidden_dim, bidirect=True, n_layers=3,
+    def __init__(self, use_pretrained, word_vectors, input_indexer, output_indexer, emb_dim, hidden_dim, embedding_dropout, bidirect=True, n_layers=3,
                  beam_size=3, decoder_len_limit=20):
         super(Seq2Seq, self).__init__()
         self.input_indexer = input_indexer
@@ -63,13 +64,13 @@ class Seq2Seq(nn.Module):
         self.grammer_indexer = createGrammerIndexer()
         self.word_vectors = word_vectors
 
-        self.input_emb = EmbeddingLayer(word_vectors)
+        self.input_emb = EmbeddingLayer(word_vectors, use_pretrained, emb_dim, len(input_indexer), embedding_dropout)
         self.encoder = Encoder(emb_dim, hidden_dim, bidirect, n_layers)
         self.decoder = Decoder(emb_dim, hidden_dim, len(self.grammer_indexer))
 
-        self.output_emb = EmbeddingLayer(word_vectors)
+        self.output_emb = EmbeddingLayer(word_vectors, use_pretrained, emb_dim, len(output_indexer), embedding_dropout)
         self.beam_size = beam_size
-        self.self.decoder_len_limit = decoder_len_limit
+        self.decoder_len_limit = decoder_len_limit
 
     def forward(self, x_tensor, inp_lens_tensor, y_tensor, out_lens_tensor):
         teacher_forcing_value = 0.5
@@ -199,7 +200,7 @@ class EmbeddingLayer(nn.Module):
     """
 
     # def __init__(self, input_dim: int, full_dict_size: int, embedding_dropout_rate: float):
-    def __init__(self, pretrained_word_vectors):
+    def __init__(self, pretrained_word_vectors, use_pretrained, input_dim: int, full_dict_size: int, embedding_dropout_rate: float):
         """
         :param input_dim: dimensionality of the word vectors
         :param full_dict_size: number of words in the vocabulary
@@ -207,7 +208,11 @@ class EmbeddingLayer(nn.Module):
         """
         super(EmbeddingLayer, self).__init__()
         # self.dropout = nn.Dropout(embedding_dropout_rate)
-        self.word_embedding = nn.Embedding.from_pretrained(torch.FloatTensor(pretrained_word_vectors.vectors))
+        if use_pretrained:
+            self.word_embedding = nn.Embedding.from_pretrained(torch.FloatTensor(pretrained_word_vectors.vectors))
+        else:
+            self.dropout = nn.Dropout(embedding_dropout_rate)
+            self.word_embedding = nn.Embedding(full_dict_size, input_dim)
         # self.word_embedding = nn.Embedding.from_pretrained(word_vectors)
 
     def forward(self, input):
@@ -382,14 +387,17 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
     all_train_output_data = torch.from_numpy(all_train_output_data)
     all_test_output_data = torch.from_numpy(all_test_output_data)
 
-    seq2seq = Seq2Seq(word_vectors,
+    seq2seq = Seq2Seq(use_pretrained=args.use_pretrained,
+                      word_vectors=word_vectors,
                       input_indexer=input_indexer,
                       output_indexer=output_indexer,
                       emb_dim=args.emb_dim,
-                      hidden_dim=args.hidden_dim)
+                      hidden_dim=args.hidden_dim,
+                      embedding_dropout=args.embedding_dropout)
 
     n_epochs = args.epochs
-    n_exs = all_train_input_data.size()[0]
+    # n_exs = all_train_input_data.size()[0]
+    n_exs = 10
     lr = args.lr
     batch_size = args.batch_size
 
@@ -404,9 +412,10 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
         total_loss = 0.0
         for ex_idx in ex_indices:
             sample = train_data[ex_idx]
-            x_tensor = sample.x_indexed
+            # sample = all_train_input_data[ex_idx]
+            x_tensor = torch.tensor(sample.x_indexed)
             inp_lens_tensor = torch.tensor([len(sample.x_indexed)])
-            y_tensor = sample.y_indexed
+            y_tensor = torch.tensor(sample.y_indexed)
             out_lens_tensor = torch.tensor([len(sample.y_indexed)])
             optimizer.zero_grad()
             decoder_outputs = seq2seq.forward(x_tensor, inp_lens_tensor, y_tensor, out_lens_tensor)
@@ -429,7 +438,7 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
             total_loss += loss
             loss.backward()
             optimizer.step()
-
+        print("Total loss on epoch %i: %f" % (epoch_idx + 1, total_loss))
     return seq2seq
 
 
