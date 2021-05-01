@@ -385,7 +385,7 @@ class RNNDecoderAttention(nn.Module):
         return (fc_output, h_t_decoder)
 
 
-def train_model(train_data: List[Example], dev_data: List[Example], input_indexer, output_indexer, args):
+def train_model(word_vectors, train_data: List[Example], dev_data: List[Example], input_indexer, output_indexer, args):
     #  -> Seq2SeqSemanticParser
     """
     Function to train the encoder-decoder model on the given data.

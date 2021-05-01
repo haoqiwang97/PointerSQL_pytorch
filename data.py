@@ -167,7 +167,7 @@ def index_data(data, input_indexer: Indexer, output_indexer: Indexer, example_le
     return data_indexed
 
 
-def index_datasets(train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0) -> (List[Example], List[Example], List[Example], Indexer, Indexer):
+def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0, use_pretrained = True) -> (List[Example], List[Example], List[Example], Indexer, Indexer):
     """
     Indexes train and test datasets where all words occurring less than or equal to unk_threshold times are
     replaced by UNK tokens.
@@ -180,22 +180,38 @@ def index_datasets(train_data, dev_data, test_data, example_len_limit, unk_thres
     :return:
     """
     input_word_counts = Counter()
-    # Count words and build the indexers
-    for (x, y) in train_data:
-        for word in tokenize(x):
-            input_word_counts[word] += 1.0
-    input_indexer = Indexer()
-    output_indexer = Indexer()
-    # Reserve 0 for the pad symbol for convenience
-    input_indexer.add_and_get_index(PAD_SYMBOL)
-    input_indexer.add_and_get_index(UNK_SYMBOL)
-    output_indexer.add_and_get_index(PAD_SYMBOL)
-    output_indexer.add_and_get_index(SOS_SYMBOL)
-    output_indexer.add_and_get_index(EOS_SYMBOL)
-    # Index all input words above the UNK threshold
-    for word in input_word_counts.keys():
-        if input_word_counts[word] > unk_threshold + 0.5:
-            input_indexer.add_and_get_index(word)
+            
+    if use_pretrained == True:
+        input_indexer = word_vectors.word_indexer  # Indexer()
+        output_indexer = word_vectors.word_indexer  # Indexer()#
+        
+        input_indexer.add_and_get_index(PAD_SYMBOL)
+        input_indexer.add_and_get_index(UNK_SYMBOL)
+        output_indexer.add_and_get_index(PAD_SYMBOL)
+        output_indexer.add_and_get_index(SOS_SYMBOL)
+        output_indexer.add_and_get_index(EOS_SYMBOL)
+    
+    else:
+        # Count words and build the indexers
+        for (x, y) in train_data:
+            for word in tokenize(x):
+                input_word_counts[word] += 1.0
+            
+        input_indexer = Indexer()
+        output_indexer = Indexer()
+        
+        # Reserve 0 for the pad symbol for convenience
+        input_indexer.add_and_get_index(PAD_SYMBOL)
+        input_indexer.add_and_get_index(UNK_SYMBOL)
+        output_indexer.add_and_get_index(PAD_SYMBOL)
+        output_indexer.add_and_get_index(SOS_SYMBOL)
+        output_indexer.add_and_get_index(EOS_SYMBOL)
+
+        # Index all input words above the UNK threshold
+        for word in input_word_counts.keys():
+            if input_word_counts[word] > unk_threshold + 0.5:
+                input_indexer.add_and_get_index(word)        
+
     # Index all output tokens in train
     for (x, y) in train_data:
         for y_tok in tokenize(y):
