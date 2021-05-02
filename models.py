@@ -83,7 +83,7 @@ class Seq2Seq(nn.Module):
 
         decoder_hidden = enc_final_states_reshaped
 
-        decoder_outputs = torch.zeros(len(y_tensor), len(self.output_indexer))
+        decoder_outputs = [() for i in range(len(y_tensor))]
         type = "V"
         for di in range(len(y_tensor)):
             type = get_type_from_idx(di)
@@ -428,18 +428,18 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
             loss = 0.0
             for idx, (output, type) in enumerate(decoder_outputs):
                 if type == "V":
-                    y_tensor[:][idx] = seq2seq.grammer_indexer.index_of(
-                        output_indexer.get_object(y_tensor[:][idx].item()))
+                    y_tensor[0][idx] = seq2seq.grammer_indexer.index_of(
+                        output_indexer.get_object(y_tensor[0][idx].item()))
                 if type != "V":
                     attn = sum_log_attn_weight(output, sample.x_tok, sample.tok_to_idx)
                     attn_over_tok = torch.zeros((1, len(sample.copy_indexer)))
                     for tok, idx in sample.tok_to_idx:
                         attn_over_tok[0][sample.copy_indexer.index_of(tok)] = attn[0][idx]
                     output = attn_over_tok
-                    y_tensor[:][idx] = sample.copy_indexer.index_of(
-                        output_indexer.get_object(y_tensor[:][idx].item()))
+                    y_tensor[0][idx] = sample.copy_indexer.index_of(
+                        output_indexer.get_object(y_tensor[0][idx].item()))
 
-                loss += criterion(output, y_tensor[:][idx])
+                loss += criterion(output, y_tensor[:,idx])
 
             total_loss += loss
             loss.backward()
