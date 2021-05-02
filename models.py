@@ -98,7 +98,7 @@ class Seq2Seq(nn.Module):
                                                                            decoder_hidden,
                                                                            enc_output_each_word)
 
-            decoder_outputs[di] = (decoder_output, type)
+            decoder_outputs[di] = (decoder_output, type)# TODO: fix
             # decoder_outputs[di] = decoder_output
         return decoder_outputs
 
@@ -384,14 +384,14 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
     print("Train output length: %i" % np.max(np.asarray([len(ex.y_indexed) for ex in train_data])))
     print("Train matrix: %s; shape = %s" % (all_train_input_data, all_train_input_data.shape))
 
-    # Format data
-    all_input_lens = torch.from_numpy(np.asarray([len(ex.x_indexed) for ex in train_data]))
-    all_train_input_data = torch.from_numpy(all_train_input_data)
-    all_test_input_data = torch.from_numpy(all_test_input_data)
+    # # Format data
+    # all_input_lens = torch.from_numpy(np.asarray([len(ex.x_indexed) for ex in train_data]))
+    # all_train_input_data = torch.from_numpy(all_train_input_data)
+    # all_test_input_data = torch.from_numpy(all_test_input_data)
 
-    all_output_lens = torch.from_numpy(np.asarray([len(ex.y_indexed) for ex in train_data]))
-    all_train_output_data = torch.from_numpy(all_train_output_data)
-    all_test_output_data = torch.from_numpy(all_test_output_data)
+    # all_output_lens = torch.from_numpy(np.asarray([len(ex.y_indexed) for ex in train_data]))
+    # all_train_output_data = torch.from_numpy(all_train_output_data)
+    # all_test_output_data = torch.from_numpy(all_test_output_data)
 
     seq2seq = Seq2Seq(use_pretrained=args.use_pretrained,
                       word_vectors=word_vectors,
