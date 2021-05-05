@@ -173,8 +173,9 @@ class Seq2Seq(nn.Module):
         input_emb = self.input_emb.forward(x_tensor)
         # (enc_output_each_word, enc_context_mask, enc_final_states) = self.encoder.forward(input_emb, inp_lens_tensor)
         (enc_output_each_word, enc_context_mask, enc_final_states) = self.encoder.forward(input_emb, inp_lens_tensor, header_length)
-        enc_final_states_reshaped = (enc_final_states[0].unsqueeze(0), enc_final_states[1].unsqueeze(0))
-        return (enc_output_each_word, enc_context_mask, enc_final_states_reshaped)
+        # enc_final_states_reshaped = (enc_final_states[0].unsqueeze(0), enc_final_states[1].unsqueeze(0))
+        #return (enc_output_each_word, enc_context_mask, enc_final_states_reshaped)
+        return (enc_output_each_word, enc_context_mask, enc_final_states)
 
 
 def get_type_from_idx(di):
