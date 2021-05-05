@@ -34,8 +34,8 @@ if __name__ == '__main__':
     
     # Load training and test data
     train_exs, dev_exs, test_exs = load_datasets(args.train_path, args.dev_path, args.test_path)
-    #dev[1][0]='1-10015132-11 player no. nationality position years^in^toronto school/club^team how many schools did player number no. 3 play at ?'
-    #dev[1][1]='1-10015132-11 count school/club^team no. = 3'
+    #dev_exs[1][0]='1-10015132-11 player no. nationality position years^in^toronto school/club^team how many schools did player number no. 3 play at ?'
+    #dev_exs[1][1]='1-10015132-11 count school/club^team no. = 3'
     # word_vectors = load_word_vecs(args.word_vecs_path)
     # train_data_indexed, dev_data_indexed, test_data_indexed, input_indexer, output_indexer = index_datasets(word_vectors, train_exs, dev_exs, test_exs, args.decoder_len_limit)
     
@@ -46,6 +46,7 @@ if __name__ == '__main__':
         word_vectors = None
         
     train_data_indexed, dev_data_indexed, test_data_indexed, input_indexer, output_indexer = index_datasets(word_vectors, train_exs, dev_exs, test_exs, args.decoder_len_limit, use_pretrained=args.use_pretrained)
+    # no pretrained
     # train_data_indexed[1].x='1-1000181-1 state/territory text/background^colour format current^slogan current^series notes what is the current^series where the notes new^series^began^in^june^2011 ?'
     # train_data_indexed[1].x_tok
     # train_data_indexed[1].x_indexed=[2, 3, 4, 5, 6, 7, 8, 11, 16, 12, 7, 17, 12, 8, 18, 19]

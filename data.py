@@ -112,36 +112,58 @@ def load_dataset(filename: str) -> List[Tuple[str, str, int]]:
         # 2nd, query, eg, raw_lines[1]='what position does the player who played for school/club^team butler^cc^(ks) play ?\n'
         # 3rd, y, ground truth, eg, raw_lines[2]='1-10015132-11 select position school/club^team = butler^cc^(ks)\n'
         # 4th, '\n', empty, eg, raw_lines[3]='\n'
+        # c=Counter()#
         n_examples = n_lines // 4
         for example_idx in range(n_examples):
             table_column_name = raw_lines[example_idx * 4].strip('\n')
             query = raw_lines[example_idx * 4 + 1].strip('\n')
             y = raw_lines[example_idx * 4 + 2].strip('\n')
-            # len(table_column_name)# len(query)
-            # len(table_column_name.split())
-            dataset.append((table_column_name + ' ' + query, y, len(table_column_name.split())))
+            
+            if len(y.split()) > 1:
+                y = hardcode_y(y)
+                # c[len(y.split())]+=1#
+                dataset.append((table_column_name + ' ' + query, y, len(table_column_name.split())))
     print("Loaded %i examples from file %s" % (n_examples, filename))
+    
     return dataset
 
-# def load_dataset(filename: str) -> List[Tuple[str, str]]:
-#     dataset = []
-#     with open(filename) as f:
-#         raw_lines = f.readlines()
-#         n_lines = len(raw_lines)
-#         # each example takes 4 lines
-#         # 1st, table and column names, eg, raw_lines[0]='1-10015132-11 player no. nationality position years^in^toronto school/club^team\n'
-#         # 2nd, query, eg, raw_lines[1]='what position does the player who played for school/club^team butler^cc^(ks) play ?\n'
-#         # 3rd, y, ground truth, eg, raw_lines[2]='1-10015132-11 select position school/club^team = butler^cc^(ks)\n'
-#         # 4th, '\n', empty, eg, raw_lines[3]='\n'
-#         n_examples = n_lines // 4
-#         for example_idx in range(n_examples):
-#             table_column_name = raw_lines[example_idx * 4].strip('\n')
-#             query = raw_lines[example_idx * 4 + 1].strip('\n')
-#             y = raw_lines[example_idx * 4 + 2].strip('\n')
 
-#             dataset.append((table_column_name + ' ' + query, y))
-#     print("Loaded %i examples from file %s" % (n_examples, filename))
-#     return dataset
+def hardcode_y(y):
+    y_toc = y.split()
+    y_toc_len = len(y_toc)
+    s = y_toc[1]
+
+    if y_toc_len == 3:
+        if s == 'select':
+            sql_y = y_toc[1] + ' ' + y_toc[2] + ' from' + ' ' + y_toc[0]
+        else:
+            sql_y = 'select ' + y_toc[1] + ' (' + y_toc[2] + ') from' + ' ' + y_toc[0]
+            
+    elif y_toc_len == 6:
+        if s == 'select':
+            sql_y = y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-3:])
+        else:
+            sql_y = 'select ' + y_toc[1] + ' (' + y_toc[2] + ') from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-3:])
+    
+    elif y_toc_len == 9:
+        if s == 'select':
+            sql_y = y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+        else:
+            sql_y = 'select ' + y_toc[1] + ' (' + y_toc[2] + ') from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+    
+    elif y_toc_len == 12:
+        if s == 'select':
+            sql_y = y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+        else:
+            sql_y = 'select ' + y_toc[1] + ' (' + y_toc[2] + ') from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+            
+    elif y_toc_len == 15:
+        if s == 'select':
+            sql_y = y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-12:-9]) + ' and ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+        else:
+            sql_y = 'select ' + y_toc[1] + ' (' + y_toc[2] + ') from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-12:-9]) + ' and ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+    
+    return sql_y
 
 
 class WordEmbeddings:
@@ -251,7 +273,17 @@ def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_li
         output_indexer.add_and_get_index(PAD_SYMBOL)
         output_indexer.add_and_get_index(SOS_SYMBOL)
         output_indexer.add_and_get_index(EOS_SYMBOL)
-    
+
+        # # Count words and build the indexers
+        # for (x, y, z) in train_data:
+        #     for word in tokenize(x):
+        #         input_word_counts[word] += 1.0
+
+        # # Index all input words above the UNK threshold
+        # for word in input_word_counts.keys():
+        #     if input_word_counts[word] > unk_threshold + 0.5:
+        #         input_indexer.add_and_get_index(word) 
+                
     else:
         # Count words and build the indexers
         for (x, y, z) in train_data:
@@ -347,3 +379,5 @@ def make_padded_output_tensor(exs, output_indexer, max_len):
     return np.array(
         [[ex.y_indexed[i] if i < len(ex.y_indexed) else output_indexer.index_of(PAD_SYMBOL) for i in range(0, max_len)]
          for ex in exs])
+
+

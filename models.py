@@ -33,7 +33,7 @@ def add_models_args(parser):
     
 
 """
-# how did I choose decoder_len_limit=20
+# how did I choose decoder_len_limit=15
 import numpy as np
 length_list = np.zeros(len(train_exs), dtype=int)
 for i in range(len(train)):
@@ -51,7 +51,7 @@ for i in range(len(dev)):
 
 max(length_list2)
 >>>15
-# so I put 20
+# so I put 15
 """
 
 
