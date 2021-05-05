@@ -333,7 +333,7 @@ class Decoder(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.output_size = output_size
-        self.rnn = nn.LSTM(input_size, hidden_size, num_layers=1, dropout=0.)
+        self.rnn = nn.LSTM(input_size, hidden_size, num_layers=3, dropout=0.)
         self.out = nn.Linear(hidden_size * 2, output_size)
         self.log_softmax = nn.LogSoftmax(dim=1)
         self.attention = Attention(self.hidden_size)
