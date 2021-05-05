@@ -61,6 +61,8 @@ if __name__ == '__main__':
     # n_gram = load_n_gram(args.n_gram_path)
 
     decoder = train_model(word_vectors, train_data_indexed, dev_data_indexed, input_indexer, output_indexer, args)
+    
+    decoder.decode(train_data_indexed[:10])
     # TODO: index train based on embedding?
 # TODO: table len, query len, do I need to store these values?
 # TODO: maintain a small built-in decoder vocabulary (sized 17)
