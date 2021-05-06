@@ -524,14 +524,25 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
             inp_lens_tensor = torch.tensor([len(sample.x_indexed)])
             y_tensor = torch.tensor(sample.y_indexed).unsqueeze(0)
             out_lens_tensor = torch.tensor([len(sample.y_indexed)])
+            for i in range(y_tensor.shape[1]):
+                type = get_type_from_idx(i)
+                if type == "V":
+                    y_tensor[0][i] = seq2seq.grammer_indexer.index_of(
+                        output_indexer.get_object(y_tensor[0][i].item()))
+                else:
+                    y_tensor[0][i] = sample.copy_indexer.index_of(
+                        output_indexer.get_object(y_tensor[0][i].item()))
+
             optimizer.zero_grad()
             # decoder_outputs = seq2seq.forward(x_tensor, inp_lens_tensor, y_tensor, out_lens_tensor)
             decoder_outputs = seq2seq.forward(x_tensor, inp_lens_tensor, y_tensor, out_lens_tensor, header_length)
             loss = 0.0
+            # y_tensor_ = y_tensor.clone()
             for idx, (output, type) in enumerate(decoder_outputs):
-                if type == "V":
-                    y_tensor[0][idx] = seq2seq.grammer_indexer.index_of(
-                        output_indexer.get_object(y_tensor[0][idx].item()))
+                # if type == "V":
+                #     y_tensor_[0][idx] = seq2seq.grammer_indexer.index_of(
+                #         output_indexer.get_object(y_tensor[0][idx].item()))
+                    # loss += criterion(output, y_tensor_[:, idx])
                 if type != "V":
                     attn = sum_log_attn_weight(output, sample.x_tok, sample.tok_to_idx)
                     attn_over_tok = torch.zeros((1, len(sample.copy_indexer)))
@@ -539,13 +550,13 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
                         idx_tok_to_idx = sample.tok_to_idx[tok]
                         attn_over_tok[0][sample.copy_indexer.index_of(tok)] = attn[0][idx_tok_to_idx]
                     output = attn_over_tok
-                    y_tensor[0][idx] = sample.copy_indexer.index_of(
-                        output_indexer.get_object(y_tensor[0][idx].item()))
+                    # y_tensor_[0][idx] = sample.copy_indexer.index_of(
+                    #     output_indexer.get_object(y_tensor[0][idx].item()))
 
                 loss += criterion(output, y_tensor[:, idx])
 
             total_loss += loss
-            
+
             loss.backward()
             optimizer.step()
         print("Total loss on epoch %i: %f" % (epoch_idx + 1, total_loss))
