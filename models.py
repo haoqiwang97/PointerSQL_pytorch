@@ -192,9 +192,9 @@ class Seq2Seq(nn.Module):
 
 
 def get_type_from_idx(di):
-    if di in [0, 1, 3, 5] or di >= 6 and di % 3 == 1:
+    if di in [0, 1, 3, 5] or (di >= 6 and di % 4 == 1) or (di >= 6 and di % 4 == 3):
         type = "V"
-    elif di in [2, 4] or di >= 6 and di % 3 == 0:
+    elif di in [2, 4] or (di >= 6 and di % 4 == 0):
         type = "C"
     else:  # di>=6 and di%3==2
         type = "Q"
