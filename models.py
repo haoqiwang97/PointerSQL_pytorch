@@ -89,9 +89,9 @@ class Seq2Seq(nn.Module):
 
         decoder_hidden = enc_final_states_reshaped
 
-        decoder_outputs = [() for i in range(len(y_tensor))]
+        decoder_outputs = [() for i in range(y_tensor.shape[1])]
         type = "V"
-        for di in range(len(y_tensor)):
+        for di in range(y_tensor.shape[1]):
             type = get_type_from_idx(di)
 
             decoder_input = y_tensor[[di - 1]] if di > 0 else torch.tensor([self.output_indexer.index_of(SOS_SYMBOL)])
