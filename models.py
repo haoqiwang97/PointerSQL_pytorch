@@ -134,10 +134,10 @@ class Seq2Seq(nn.Module):
                     for beam_state, score in beams[di].get_elts_and_scores():
 
                         y_tokens, decoder_input, decoder_hidden = beam_state
-                        print(decoder_input)
-                        if len(y_tokens) > 0:
-                            print(y_tokens[-1])
-                        print("----")
+                        # print(decoder_input)
+                        # if len(y_tokens) > 0:
+                        #     print(y_tokens[-1])
+                        # print("----")
                         output_emb = self.output_emb.forward(decoder_input)
                         if type == "V":
                             decoder_output, decoder_hidden = self.decoder.forward_pred(output_emb, decoder_hidden,
@@ -177,7 +177,7 @@ class Seq2Seq(nn.Module):
                 for beam_state, score in end_beam.get_elts_and_scores():
                     test_ex_de.append(Derivation(test_ex, exp(score), beam_state[0]))
                 test_derives.append(test_ex_de)
-                # print(best_y_tok)
+                print(test_ex_de[0].y_toks)
         return test_derives
 
     # def encode_input(self, x_tensor, inp_lens_tensor):
