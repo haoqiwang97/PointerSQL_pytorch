@@ -135,33 +135,33 @@ def hardcode_y(y):
 
     if y_toc_len == 3:
         if s == 'select':
-            sql_y = y_toc[1] + ' ' + y_toc[2] + ' from' + ' ' + y_toc[0]
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from' + ' ' + y_toc[0]
         else:
-            sql_y = 'select ' + y_toc[1] + ' (' + y_toc[2] + ') from' + ' ' + y_toc[0]
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from' + ' ' + y_toc[0]
             
     elif y_toc_len == 6:
         if s == 'select':
-            sql_y = y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-3:])
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-3:])
         else:
-            sql_y = 'select ' + y_toc[1] + ' (' + y_toc[2] + ') from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-3:])
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-3:])
     
     elif y_toc_len == 9:
         if s == 'select':
-            sql_y = y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
         else:
-            sql_y = 'select ' + y_toc[1] + ' (' + y_toc[2] + ') from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
     
     elif y_toc_len == 12:
         if s == 'select':
-            sql_y = y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
         else:
-            sql_y = 'select ' + y_toc[1] + ' (' + y_toc[2] + ') from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
             
     elif y_toc_len == 15:
         if s == 'select':
-            sql_y = y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-12:-9]) + ' and ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-12:-9]) + ' and ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
         else:
-            sql_y = 'select ' + y_toc[1] + ' (' + y_toc[2] + ') from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-12:-9]) + ' and ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-12:-9]) + ' and ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
     
     return sql_y
 

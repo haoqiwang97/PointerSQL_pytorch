@@ -45,7 +45,7 @@ if __name__ == '__main__':
     else:
         word_vectors = None
         
-    train_data_indexed, dev_data_indexed, test_data_indexed, input_indexer, output_indexer = index_datasets(word_vectors, train_exs, dev_exs, test_exs, args.decoder_len_limit, use_pretrained=args.use_pretrained)
+    train_data_indexed, dev_data_indexed, test_data_indexed, input_indexer, output_indexer = index_datasets(word_vectors, train_exs[:10], dev_exs, test_exs, args.decoder_len_limit, use_pretrained=args.use_pretrained)
     # no pretrained
     # train_data_indexed[1].x='1-1000181-1 state/territory text/background^colour format current^slogan current^series notes what is the current^series where the notes new^series^began^in^june^2011 ?'
     # train_data_indexed[1].x_tok
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     # train_data_indexed[1].y='1-1000181-1 select current^series notes = new^series^began^in^june^2011'
     # train_data_indexed[1].y_tok
     # train_data_indexed[1].y_indexed=[3, 4, 9, 5, 7, 10, 2]
-    
+    # train_data[2].y_tok
     # word_vecs.word_indexer.get_object(1)='UNK'
     # word_vecs.word_indexer.get_object(100)='against'
     
