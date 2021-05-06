@@ -299,6 +299,10 @@ def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_li
         output_indexer.add_and_get_index(PAD_SYMBOL)
         output_indexer.add_and_get_index(SOS_SYMBOL)
         output_indexer.add_and_get_index(EOS_SYMBOL)
+        output_indexer.add_and_get_index(UNK_SYMBOL)
+        # output_indexer.add_and_get_index("where")
+        # output_indexer.add_and_get_index("from")
+        # output_indexer.add_and_get_index("and")
 
         # Index all input words above the UNK threshold
         for word in input_word_counts.keys():

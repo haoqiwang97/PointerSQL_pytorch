@@ -30,7 +30,7 @@ def add_models_args(parser):
     parser.add_argument('--embedding_dropout', type=float, default=0.2, help='embedding layer dropout rate')
     parser.add_argument('--hidden_dim', type=int, default=100, help='hidden layer size')
     parser.add_argument('--n_layers', type=int, default=3, help='number of layers')
-    
+
 
 """
 # how did I choose decoder_len_limit=15
@@ -56,12 +56,15 @@ max(length_list2)
 
 
 class Seq2Seq(nn.Module):
-    def __init__(self, use_pretrained, word_vectors, input_indexer, output_indexer, emb_dim, hidden_dim, embedding_dropout, bidirect=True, n_layers=3,
+    def __init__(self, use_pretrained, word_vectors, input_indexer, output_indexer, emb_dim, hidden_dim,
+                 embedding_dropout, bidirect=True, n_layers=3,
                  beam_size=3, decoder_len_limit=20):
         super(Seq2Seq, self).__init__()
         self.input_indexer = input_indexer
         self.output_indexer = output_indexer
         self.grammer_indexer = createGrammerIndexer()
+        for tok in self.grammer_indexer.objs_to_ints:
+            self.output_indexer.add_and_get_index(tok)
         self.word_vectors = word_vectors
 
         self.input_emb = EmbeddingLayer(word_vectors, use_pretrained, emb_dim, len(input_indexer), embedding_dropout)
@@ -80,8 +83,10 @@ class Seq2Seq(nn.Module):
         output_lens = out_lens_tensor.item()
 
         # (enc_output_each_word, enc_context_mask, enc_final_states_reshaped) = self.encode_input(x_tensor, inp_lens_tensor)
-        (enc_output_each_word, enc_context_mask, enc_final_states_reshaped) = self.encode_input(x_tensor, inp_lens_tensor, header_length)
-        
+        (enc_output_each_word, enc_context_mask, enc_final_states_reshaped) = self.encode_input(x_tensor,
+                                                                                                inp_lens_tensor,
+                                                                                                header_length)
+
         decoder_hidden = enc_final_states_reshaped
 
         decoder_outputs = [() for i in range(len(y_tensor))]
@@ -111,7 +116,8 @@ class Seq2Seq(nn.Module):
                 enc_output_each_word, enc_context_mask, enc_final_states_reshaped = self.encode_input(
                     torch.tensor([test_x]),
                     torch.tensor(
-                        [len(test_x)])) # TODO: TypeError: encode_input() missing 1 required positional argument: 'header_length'
+                        [len(test_x)]),
+                    test_ex.header_length)  # TODO: TypeError: encode_input() missing 1 required positional argument: 'header_length'
                 decoder_input = torch.tensor([self.output_indexer.index_of(SOS_SYMBOL)])
                 decoder_hidden = enc_final_states_reshaped
 
@@ -128,7 +134,10 @@ class Seq2Seq(nn.Module):
                     for beam_state, score in beams[di].get_elts_and_scores():
 
                         y_tokens, decoder_input, decoder_hidden = beam_state
-
+                        print(decoder_input)
+                        if len(y_tokens) > 0:
+                            print(y_tokens[-1])
+                        print("----")
                         output_emb = self.output_emb.forward(decoder_input)
                         if type == "V":
                             decoder_output, decoder_hidden = self.decoder.forward_pred(output_emb, decoder_hidden,
@@ -153,7 +162,10 @@ class Seq2Seq(nn.Module):
                             if token != "<EOS>" and token != "<GO>":
                                 y_tokens_new.append(token)
                             score_new = score + prob
-                            decoder_input_new = torch.tensor([self.output_indexer.index_of(token)])
+                            if self.output_indexer.index_of(token) != -1:
+                                decoder_input_new = torch.tensor([self.output_indexer.index_of(token)])
+                            else:
+                                decoder_input_new = torch.tensor([self.output_indexer.index_of(UNK_SYMBOL)])
                             if token != "<EOS>" and di < self.decoder_len_limit - 1:
                                 beams[di + 1].add(elt=(y_tokens_new, decoder_input_new, decoder_hidden),
                                                   score=score_new)
@@ -172,9 +184,10 @@ class Seq2Seq(nn.Module):
     def encode_input(self, x_tensor, inp_lens_tensor, header_length):
         input_emb = self.input_emb.forward(x_tensor)
         # (enc_output_each_word, enc_context_mask, enc_final_states) = self.encoder.forward(input_emb, inp_lens_tensor)
-        (enc_output_each_word, enc_context_mask, enc_final_states) = self.encoder.forward(input_emb, inp_lens_tensor, header_length)
+        (enc_output_each_word, enc_context_mask, enc_final_states) = self.encoder.forward(input_emb, inp_lens_tensor,
+                                                                                          header_length)
         # enc_final_states_reshaped = (enc_final_states[0].unsqueeze(0), enc_final_states[1].unsqueeze(0))
-        #return (enc_output_each_word, enc_context_mask, enc_final_states_reshaped)
+        # return (enc_output_each_word, enc_context_mask, enc_final_states_reshaped)
         return (enc_output_each_word, enc_context_mask, enc_final_states)
 
 
@@ -192,8 +205,8 @@ def sum_log_attn_weight(log_attn_weights, x_tok, tok_to_idx):
     for idx, tok in enumerate(x_tok):
         if idx != tok_to_idx[tok]:
             log_attn_weights[0][tok_to_idx[tok]] = torch.logaddexp(log_attn_weights[0][tok_to_idx[tok]],
-                                                                   log_attn_weights[0][tok])
-            log_attn_weights[0][tok] = float("-inf")
+                                                                   log_attn_weights[0][idx])
+            log_attn_weights[0][idx] = float("-inf")
     return log_attn_weights
 
 
@@ -204,7 +217,8 @@ class EmbeddingLayer(nn.Module):
     """
 
     # def __init__(self, input_dim: int, full_dict_size: int, embedding_dropout_rate: float):
-    def __init__(self, pretrained_word_vectors, use_pretrained, input_dim: int, full_dict_size: int, embedding_dropout_rate: float):
+    def __init__(self, pretrained_word_vectors, use_pretrained, input_dim: int, full_dict_size: int,
+                 embedding_dropout_rate: float):
         """
         :param input_dim: dimensionality of the word vectors
         :param full_dict_size: number of words in the vocabulary
@@ -239,14 +253,14 @@ class Encoder(nn.Module):
         self.n_layers = n_layers
         # self.reduce_h_W = nn.Linear(hidden_dim * 2, hidden_dim, bias=True)
         # self.reduce_h_W = nn.Linear(hidden_dim * 4, hidden_dim, bias=True)
-        self.layer1_reduce_h_W = nn.Linear(hidden_dim * 4, hidden_dim, bias=True)#hidden_dim=100
-        self.layer2_reduce_h_W = nn.Linear(hidden_dim * 4, hidden_dim, bias=True)        
+        self.layer1_reduce_h_W = nn.Linear(hidden_dim * 4, hidden_dim, bias=True)  # hidden_dim=100
+        self.layer2_reduce_h_W = nn.Linear(hidden_dim * 4, hidden_dim, bias=True)
         self.layer3_reduce_h_W = nn.Linear(hidden_dim * 4, hidden_dim, bias=True)
 
-        self.layer1_reduce_c_W = nn.Linear(hidden_dim * 4, hidden_dim, bias=True)#hidden_dim=100
-        self.layer2_reduce_c_W = nn.Linear(hidden_dim * 4, hidden_dim, bias=True)        
+        self.layer1_reduce_c_W = nn.Linear(hidden_dim * 4, hidden_dim, bias=True)  # hidden_dim=100
+        self.layer2_reduce_c_W = nn.Linear(hidden_dim * 4, hidden_dim, bias=True)
         self.layer3_reduce_c_W = nn.Linear(hidden_dim * 4, hidden_dim, bias=True)
-        
+
         self.reduce_c_W = nn.Linear(hidden_dim * 2, hidden_dim, bias=True)
         self.rnn = nn.LSTM(input_dim, hidden_dim, num_layers=n_layers,
                            batch_first=True, dropout=0,
@@ -287,30 +301,33 @@ class Encoder(nn.Module):
         the final states h and c from the encoder for each sentence.
         """
         # Takes the embedded sentences, "packs" them into an efficient Pytorch-internal representation
-        embedded_words_part1 = embedded_words[:, 0:header_length,:]
-        embedded_words_part2 = embedded_words[:, header_length:,:]
-        
+        embedded_words_part1 = embedded_words[:, 0:header_length, :]
+        embedded_words_part2 = embedded_words[:, header_length:, :]
+
         # packed_embedding = nn.utils.rnn.pack_padded_sequence(embedded_words, input_lens, batch_first=True, enforce_sorted=False)
-        packed_embedding_part1 = nn.utils.rnn.pack_padded_sequence(embedded_words_part1, torch.tensor([header_length]), batch_first=True, enforce_sorted=False)
-        packed_embedding_part2 = nn.utils.rnn.pack_padded_sequence(embedded_words_part2, input_lens-torch.tensor([header_length]), batch_first=True, enforce_sorted=False)
-        
+        packed_embedding_part1 = nn.utils.rnn.pack_padded_sequence(embedded_words_part1, torch.tensor([header_length]),
+                                                                   batch_first=True, enforce_sorted=False)
+        packed_embedding_part2 = nn.utils.rnn.pack_padded_sequence(embedded_words_part2,
+                                                                   input_lens - torch.tensor([header_length]),
+                                                                   batch_first=True, enforce_sorted=False)
+
         output_part1, hn_part1 = self.rnn(packed_embedding_part1)
         output_part2, hn_part2 = self.rnn(packed_embedding_part2, hn_part1)
-        
+
         # output = torch.cat((output_part1, output_part2))
-        
+
         # output, sent_lens = nn.utils.rnn.pad_packed_sequence(output)
         output_part1, sent_lens_part1 = nn.utils.rnn.pad_packed_sequence(output_part1)
         output_part2, sent_lens_part2 = nn.utils.rnn.pad_packed_sequence(output_part2)
         output = torch.cat((output_part1, output_part2))
-        
+
         sent_lens = sent_lens_part1 + sent_lens_part2
         # output, hn = self.rnn(packed_embedding)
         # Unpacks the Pytorch representation into normal tensors
-        
+
         max_length = input_lens.max().item()
         context_mask = self.sent_lens_to_mask(sent_lens, max_length)
-        
+
         # header_length = 6
         # hid_state_header = output[header_length]
         # Grabs the encoded representations out of hn, which is a weird tuple thing.
@@ -319,12 +336,14 @@ class Encoder(nn.Module):
         if self.bidirect:
             h_part1, c_part1 = hn_part1[0], hn_part1[1]
             h_part2, c_part2 = hn_part2[0], hn_part2[1]
-            
-            h_part1=h_part1.view(self.n_layers, 2, 1, self.hidden_dim) # h_n.view(num_layers, num_directions, batch, hidden_size)
-            h_part2=h_part2.view(self.n_layers, 2, 1, self.hidden_dim)
 
-            c_part1=c_part1.view(self.n_layers, 2, 1, self.hidden_dim) # h_n.view(num_layers, num_directions, batch, hidden_size)
-            c_part2=c_part2.view(self.n_layers, 2, 1, self.hidden_dim)            
+            h_part1 = h_part1.view(self.n_layers, 2, 1,
+                                   self.hidden_dim)  # h_n.view(num_layers, num_directions, batch, hidden_size)
+            h_part2 = h_part2.view(self.n_layers, 2, 1, self.hidden_dim)
+
+            c_part1 = c_part1.view(self.n_layers, 2, 1,
+                                   self.hidden_dim)  # h_n.view(num_layers, num_directions, batch, hidden_size)
+            c_part2 = c_part2.view(self.n_layers, 2, 1, self.hidden_dim)
             # h_part1[0,0,:,:].size()
             # h, c = hn[0], hn[1]  # h & c = (num_layers * num_directions, batch, hidden_size)
             # Grab the representations from forward and backward LSTMs
@@ -333,14 +352,20 @@ class Encoder(nn.Module):
 
             # h_, c_ = torch.cat((h[0], h[1]), dim=1), torch.cat((c[0], c[1]), dim=1)
             # layer1_h_ = torch.cat((h_part1[0], h_part1[1], h_part2[0], h_part2[1]), dim=1) # h_part1[0].size()=torch.Size([1, 100])
-            layer1_h_ = torch.cat((h_part1[0,0,:,:], h_part1[0,1,:,:], h_part2[0,0,:,:], h_part2[0,1,:,:]), dim=1)
-            layer2_h_ = torch.cat((h_part1[1,0,:,:], h_part1[1,1,:,:], h_part2[1,0,:,:], h_part2[1,1,:,:]), dim=1)
-            layer3_h_ = torch.cat((h_part1[2,0,:,:], h_part1[2,1,:,:], h_part2[2,0,:,:], h_part2[2,1,:,:]), dim=1)
+            layer1_h_ = torch.cat((h_part1[0, 0, :, :], h_part1[0, 1, :, :], h_part2[0, 0, :, :], h_part2[0, 1, :, :]),
+                                  dim=1)
+            layer2_h_ = torch.cat((h_part1[1, 0, :, :], h_part1[1, 1, :, :], h_part2[1, 0, :, :], h_part2[1, 1, :, :]),
+                                  dim=1)
+            layer3_h_ = torch.cat((h_part1[2, 0, :, :], h_part1[2, 1, :, :], h_part2[2, 0, :, :], h_part2[2, 1, :, :]),
+                                  dim=1)
 
-            layer1_c_ = torch.cat((c_part1[0,0,:,:], c_part1[0,1,:,:], c_part2[0,0,:,:], c_part2[0,1,:,:]), dim=1)
-            layer2_c_ = torch.cat((c_part1[1,0,:,:], c_part1[1,1,:,:], c_part2[1,0,:,:], c_part2[1,1,:,:]), dim=1)
-            layer3_c_ = torch.cat((c_part1[2,0,:,:], c_part1[2,1,:,:], c_part2[2,0,:,:], c_part2[2,1,:,:]), dim=1)
-            
+            layer1_c_ = torch.cat((c_part1[0, 0, :, :], c_part1[0, 1, :, :], c_part2[0, 0, :, :], c_part2[0, 1, :, :]),
+                                  dim=1)
+            layer2_c_ = torch.cat((c_part1[1, 0, :, :], c_part1[1, 1, :, :], c_part2[1, 0, :, :], c_part2[1, 1, :, :]),
+                                  dim=1)
+            layer3_c_ = torch.cat((c_part1[2, 0, :, :], c_part1[2, 1, :, :], c_part2[2, 0, :, :], c_part2[2, 1, :, :]),
+                                  dim=1)
+
             # h_ = torch.cat((h[0], h[1], hid_state_header), dim=1)
             # c_ = torch.cat((c[0], c[1]), dim=1)
 
@@ -350,22 +375,20 @@ class Encoder(nn.Module):
             # new_c = self.reduce_c_W(c_)
             # h_t = (new_h, new_c)
 
-
-
             layer1_new_h = self.layer1_reduce_h_W(layer1_h_)  # new_h = [batch, hidden_size]
             layer2_new_h = self.layer2_reduce_h_W(layer2_h_)
             layer3_new_h = self.layer3_reduce_h_W(layer3_h_)
             all_new_h = torch.stack((layer1_new_h, layer2_new_h, layer3_new_h))
-            
+
             layer1_new_c = self.layer1_reduce_c_W(layer1_c_)  # new_h = [batch, hidden_size]
             layer2_new_c = self.layer2_reduce_c_W(layer2_c_)
             layer3_new_c = self.layer3_reduce_c_W(layer3_c_)
             all_new_c = torch.stack((layer1_new_c, layer2_new_c, layer3_new_c))
-            
+
             all_h_t = (all_new_h, all_new_c)
             # new_c = self.reduce_c_W(c_)
             # h_t = (new_h, new_c)
-            
+
         # else:
         #     h, c = hn[0][0], hn[1][0]
         #     h_t = (h, c)
@@ -383,12 +406,14 @@ class Attention(nn.Module):
         # attn_logits = hidden.bmm(values.transpose(1, 2))
         values = self.linear(encoder_outputs.squeeze(0))
         attn_logits = hidden.bmm(values.transpose(0, 1).transpose(1, 2))
-        
+
         attn_weights = F.softmax(attn_logits, dim=-1)
         # context = attn_weights.bmm(values)
-        context = attn_weights.bmm(values.transpose(0,1))
+        context = attn_weights.bmm(values.transpose(0, 1))
 
         return attn_weights, context
+
+
 # values2 = self.linear(encoder_outputs.squeeze(0))
 # values3 = values2.transpose(1, 2)
 # temp = values.transpose(1, 2)
@@ -423,8 +448,8 @@ class Decoder(nn.Module):
 
     def forward_pred(self, embedded_words, hidden, encoder_outputs):
         output, hidden = self.rnn(embedded_words.view(len(embedded_words), 1, -1), hidden)
-        #embedded_words.view(len(embedded_words), 1, -1).size()=torch.Size([1, 1, 200])
-        #hidden
+        # embedded_words.view(len(embedded_words), 1, -1).size()=torch.Size([1, 1, 200])
+        # hidden
         attn_weights, context = self.attention(output, encoder_outputs)
         output = output.view(len(embedded_words), -1)
         context = context.view(len(embedded_words), -1)
@@ -513,7 +538,7 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
                     y_tensor[0][idx] = sample.copy_indexer.index_of(
                         output_indexer.get_object(y_tensor[0][idx].item()))
 
-                loss += criterion(output, y_tensor[:,idx])
+                loss += criterion(output, y_tensor[:, idx])
 
             total_loss += loss
             loss.backward()
