@@ -533,7 +533,8 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
                 if type != "V":
                     attn = sum_log_attn_weight(output, sample.x_tok, sample.tok_to_idx)
                     attn_over_tok = torch.zeros((1, len(sample.copy_indexer)))
-                    for tok, idx in sample.tok_to_idx:
+                    for tok in sample.tok_to_idx:
+                        idx = sample.tok_to_idx[tok]
                         attn_over_tok[0][sample.copy_indexer.index_of(tok)] = attn[0][idx]
                     output = attn_over_tok
                     y_tensor[0][idx] = sample.copy_indexer.index_of(
