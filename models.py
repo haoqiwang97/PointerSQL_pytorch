@@ -18,6 +18,7 @@ import numpy as np
 from typing import List
 from torch import optim
 from math import exp
+from torch import autograd
 
 
 def add_models_args(parser):
@@ -510,6 +511,7 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
     criterion = nn.NLLLoss()
 
     seq2seq.train()
+    # with autograd.detect_anomaly():
     for epoch_idx in range(n_epochs):
         ex_indices = [i for i in range(0, n_exs)]
         np.random.shuffle(ex_indices)
@@ -534,8 +536,8 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
                     attn = sum_log_attn_weight(output, sample.x_tok, sample.tok_to_idx)
                     attn_over_tok = torch.zeros((1, len(sample.copy_indexer)))
                     for tok in sample.tok_to_idx:
-                        idx = sample.tok_to_idx[tok]
-                        attn_over_tok[0][sample.copy_indexer.index_of(tok)] = attn[0][idx]
+                        idx_tok_to_idx = sample.tok_to_idx[tok]
+                        attn_over_tok[0][sample.copy_indexer.index_of(tok)] = attn[0][idx_tok_to_idx]
                     output = attn_over_tok
                     y_tensor[0][idx] = sample.copy_indexer.index_of(
                         output_indexer.get_object(y_tensor[0][idx].item()))
@@ -543,6 +545,7 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
                 loss += criterion(output, y_tensor[:, idx])
 
             total_loss += loss
+            
             loss.backward()
             optimizer.step()
         print("Total loss on epoch %i: %f" % (epoch_idx + 1, total_loss))
