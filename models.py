@@ -125,17 +125,20 @@ class Seq2Seq(nn.Module):
 
                 end_beam = Beam(self.beam_size)
 
-                beams = [Beam(self.beam_size) for x in range(self.decoder_len_limit)]
-                beams[0].add(elt=([], decoder_input, decoder_hidden), score=0.0)
+                beams = [Beam(self.beam_size) for x in range(self.decoder_len_limit + 1)]
+                beams[0].add(elt=([], decoder_input, decoder_hidden, False), score=0.0)
 
                 type = "V"
 
-                for di in range(self.decoder_len_limit):
+                for di in range(self.decoder_len_limit + 1):
                     type = get_type_from_idx(di)
 
                     for beam_state, score in beams[di].get_elts_and_scores():
 
-                        y_tokens, decoder_input, decoder_hidden = beam_state
+                        y_tokens, decoder_input, decoder_hidden, is_end = beam_state
+                        if is_end or di == self.decoder_len_limit:
+                            end_beam.add(elt=beam_state, score=score)
+                            continue
                         # print(decoder_input)
                         # if len(y_tokens) > 0:
                         #     print(y_tokens[-1])
@@ -149,9 +152,9 @@ class Seq2Seq(nn.Module):
                             decoder_output, decoder_hidden = self.decoder.forward_copy(output_emb, decoder_hidden,
                                                                                        enc_output_each_word)
                             if type == "Q":
-                                decoder_output[0][0:test_ex.header_length] = float("-inf")
+                                decoder_output[0][0:test_ex.header_length] = 0.
 
-                            decoder_output = sum_log_attn_weight(decoder_output, test_ex.x_tok, test_ex.tok_to_idx)
+                            decoder_output = log_sum_attn_weight(decoder_output, test_ex.mask)
 
                         topv, topi = decoder_output.data.topk(self.beam_size)
                         for i in range(self.beam_size):
@@ -159,21 +162,20 @@ class Seq2Seq(nn.Module):
                             if type == "V":
                                 token = self.grammer_indexer.get_object(topi[0][i].item())
                             else:
-                                token = test_ex.x_tok[topi[0][i].item()]
+                                token = test_ex.copy_indexer.get_object(topi[0][i].item())
                             prob = topv[0][i].item()
                             if token != "<EOS>" and token != "<GO>":
                                 y_tokens_new.append(token)
+                            elif token == "<EOS>":
+                                is_end = True
                             score_new = score + prob
                             if self.output_indexer.index_of(token) != -1:
                                 decoder_input_new = torch.tensor([self.output_indexer.index_of(token)])
                             else:
                                 decoder_input_new = torch.tensor([self.output_indexer.index_of(UNK_SYMBOL)])
-                            if token != "<EOS>" and di < self.decoder_len_limit - 1:
-                                beams[di + 1].add(elt=(y_tokens_new, decoder_input_new, decoder_hidden),
-                                                  score=score_new)
-                            else:
-                                end_beam.add(elt=(y_tokens_new, decoder_input_new, decoder_hidden),
-                                             score=score_new)
+
+                            beams[di + 1].add(elt=(y_tokens_new, decoder_input_new, decoder_hidden, is_end),
+                                              score=score_new)
 
                 test_ex_de = []
                 for beam_state, score in end_beam.get_elts_and_scores():
@@ -196,20 +198,19 @@ class Seq2Seq(nn.Module):
 def get_type_from_idx(di):
     if di in [0, 1, 3, 5] or (di >= 6 and di % 4 == 1) or (di >= 6 and di % 4 == 3):
         type = "V"
-    elif di in [2, 4] or (di >= 6 and di % 4 == 0):
+    elif di in [2, 4] or (di >= 6 and di % 4 == 2):
         type = "C"
     else:  # di>=6 and di%3==2
         type = "Q"
     return type
 
 
-def sum_log_attn_weight(log_attn_weights, x_tok, tok_to_idx):
-    for idx, tok in enumerate(x_tok):
-        if idx != tok_to_idx[tok]:
-            log_attn_weights[0][tok_to_idx[tok]] = torch.logaddexp(log_attn_weights[0][tok_to_idx[tok]],
-                                                                   log_attn_weights[0][idx])
-            log_attn_weights[0][idx] = float("-inf")
-    return log_attn_weights
+def log_sum_attn_weight(attn_weights, x_mask):
+    # log_attn_weights = log_attn_weights.expand(x_mask.shape[0], -1)
+
+    log_prob = torch.matmul(attn_weights, x_mask)
+    log_prob = torch.log(log_prob)
+    return log_prob
 
 
 class EmbeddingLayer(nn.Module):
@@ -461,7 +462,7 @@ class Decoder(nn.Module):
     def forward_copy(self, embedded_words, hidden, encoder_outputs):
         output, hidden = self.rnn(embedded_words.view(len(embedded_words), 1, -1), hidden)
         attn_weights, context = self.attention(output, encoder_outputs)
-        return torch.log(attn_weights.view(1, -1)), hidden
+        return attn_weights.view(1, -1), hidden
 
 
 def train_model(word_vectors, train_data: List[Example], dev_data: List[Example], input_indexer, output_indexer, args):
@@ -542,14 +543,14 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
                 # if type == "V":
                 #     y_tensor_[0][idx] = seq2seq.grammer_indexer.index_of(
                 #         output_indexer.get_object(y_tensor[0][idx].item()))
-                    # loss += criterion(output, y_tensor_[:, idx])
+                # loss += criterion(output, y_tensor_[:, idx])
                 if type != "V":
-                    attn = sum_log_attn_weight(output, sample.x_tok, sample.tok_to_idx)
-                    attn_over_tok = torch.zeros((1, len(sample.copy_indexer)))
-                    for tok in sample.tok_to_idx:
-                        idx_tok_to_idx = sample.tok_to_idx[tok]
-                        attn_over_tok[0][sample.copy_indexer.index_of(tok)] = attn[0][idx_tok_to_idx]
-                    output = attn_over_tok
+                    output = log_sum_attn_weight(output, sample.mask)
+                    # attn_over_tok = torch.zeros((1, len(sample.copy_indexer)))
+                    # for tok in sample.tok_to_idx:
+                    #     idx_tok_to_idx = sample.tok_to_idx[tok]
+                    #     attn_over_tok[0][sample.copy_indexer.index_of(tok)] = attn[0][idx_tok_to_idx]
+                    # output = attn_over_tok
                     # y_tensor_[0][idx] = sample.copy_indexer.index_of(
                     #     output_indexer.get_object(y_tensor[0][idx].item()))
 
