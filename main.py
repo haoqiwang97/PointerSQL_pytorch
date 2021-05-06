@@ -20,7 +20,7 @@ def _parse_args():
     # parser.add_argument('--word_vecs_path', type=str, default='data/glove.6B.100d.txt', help='path to word embeddings to use')
     parser.add_argument('--word_vecs_path', type=str, default='data/glove.6B.50d-relativized.txt', help='path to word embeddings to use')
     parser.add_argument('--n_gram_path', type=str, default='data/jmt_char_n_gram.txt', help='path to ngrams to use')
-    parser.add_argument('--use_pretrained', type=bool, default=True, help='use pretrained word vector or not')
+    parser.add_argument('--use_pretrained', type=bool, default=False, help='use pretrained word vector or not')
     
     add_models_args(parser) # defined in models.py
     
@@ -55,6 +55,8 @@ if __name__ == '__main__':
     
     # n_gram = load_n_gram(args.n_gram_path)
 
-    decoder = train_model(word_vectors, train_data_indexed, dev_data_indexed, input_indexer, output_indexer, args)
-
+    # decoder = train_model(word_vectors, train_data_indexed, dev_data_indexed, input_indexer, output_indexer, args)
+    decoder = train_model(train_data_indexed, dev_data_indexed, input_indexer, output_indexer, args)
+    
+    decoder.decode(train_data_indexed[0:10])
 # TODO: maintain a small built-in decoder vocabulary (sized 17)

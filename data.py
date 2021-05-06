@@ -78,10 +78,49 @@ def load_dataset(filename: str) -> List[Tuple[str, str]]:
             table_column_name = raw_lines[example_idx * 4].strip('\n')
             query = raw_lines[example_idx * 4 + 1].strip('\n')
             y = raw_lines[example_idx * 4 + 2].strip('\n')
-
-            dataset.append((table_column_name + ' ' + query, y))
+            if len(y.split()) > 1:
+                y = hardcode_y(y)
+                dataset.append((table_column_name + ' ' + query, y))
     print("Loaded %i examples from file %s" % (n_examples, filename))
     return dataset
+
+
+def hardcode_y(y):
+    y_toc = y.split()
+    y_toc_len = len(y_toc)
+    s = y_toc[1]
+
+    if y_toc_len == 3:
+        if s == 'select':
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from' + ' ' + y_toc[0]
+        else:
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from' + ' ' + y_toc[0]
+            
+    elif y_toc_len == 6:
+        if s == 'select':
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-3:])
+        else:
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-3:])
+    
+    elif y_toc_len == 9:
+        if s == 'select':
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+        else:
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+    
+    elif y_toc_len == 12:
+        if s == 'select':
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+        else:
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+            
+    elif y_toc_len == 15:
+        if s == 'select':
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-12:-9]) + ' and ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+        else:
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-12:-9]) + ' and ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+    
+    return sql_y
 
 
 class WordEmbeddings:

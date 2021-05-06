@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 20 23:27:11 2021
-
-@author: haoqiwang
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -18,38 +10,237 @@ import numpy as np
 from typing import List
 from torch import optim
 
-
 def add_models_args(parser):
+    """
+    Command-line arguments to the system related to your model.  Feel free to extend here.  
+    """
+    # Some common arguments for your convenience
+    parser.add_argument('--seed', type=int, default=0, help='RNG seed (default = 0)')
     parser.add_argument('--epochs', type=int, default=10, help='num epochs to train for')
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--batch_size', type=int, default=1, help='batch size')
+
+    # 65 is all you need for GeoQuery
+    parser.add_argument('--decoder_len_limit', type=int, default=65, help='output length limit of the decoder')
+    parser.add_argument('--emb_dim', type=int, default=100, help='word embedding dimensions')
+    parser.add_argument('--hidden_size', type=int, default=100, help='hidden layer size')
+    # parser.add_argument('--encoder_len_limit', type=int, default=19, help='input length limit of the encoder')
+    # Feel free to add other hyperparameters for your input dimension, etc. to control your network
+    # 50-200 might be a good range to start with for embedding and LSTM sizes
+
+
+class NearestNeighborSemanticParser(object):
+    """
+    Semantic parser that uses Jaccard similarity to find the most similar input example to a particular question and
+    returns the associated logical form.
+    """
+    def __init__(self, training_data: List[Example]):
+        self.training_data = training_data
+
+    def decode(self, test_data: List[Example]) -> List[List[Derivation]]:
+        """
+        :param test_data: List[Example] to decode
+        :return: A list of k-best lists of Derivations. A Derivation consists of the underlying Example, a probability,
+        and a tokenized input string. If you're just doing one-best decoding of example ex and you
+        produce output y_tok, you can just return the k-best list [Derivation(ex, 1.0, y_tok)]
+        """
+        test_derivs = []
+        for test_ex in test_data:
+            test_words = test_ex.x_tok
+            best_jaccard = -1
+            best_train_ex = None
+            # Find the highest word overlap with the train data
+            for train_ex in self.training_data:
+                # Compute word overlap
+                train_words = train_ex.x_tok
+                overlap = len(frozenset(train_words) & frozenset(test_words))
+                jaccard = overlap/float(len(frozenset(train_words) | frozenset(test_words)))
+                if jaccard > best_jaccard:
+                    best_jaccard = jaccard
+                    best_train_ex = train_ex
+            # N.B. a list!
+            test_derivs.append([Derivation(test_ex, 1.0, best_train_ex.y_tok)])
+        return test_derivs
+
+
+###################################################################################################################
+# You do not have to use any of the classes in this file, but they're meant to give you a starting implementation.
+# for your network.
+###################################################################################################################
+
+class Seq2SeqSemanticParser(nn.Module):
+    def __init__(self, input_indexer, output_indexer, emb_dim, hidden_size, embedding_dropout=0.2, bidirect=True):
+        # We've include some args for setting up the input embedding and encoder
+        # You'll need to add code for output embedding and decoder
+        super(Seq2SeqSemanticParser, self).__init__()
+        self.input_indexer = input_indexer
+        self.output_indexer = output_indexer
+        
+        self.input_emb = EmbeddingLayer(emb_dim, len(input_indexer), embedding_dropout)
+        self.encoder = RNNEncoder(emb_dim, hidden_size, bidirect)
+        # input_emb_decoder=output_emb
+        self.output_emb = EmbeddingLayer(emb_dim, len(output_indexer), embedding_dropout)
+        self.decoder = RNNDecoder(emb_dim, hidden_size, len(output_indexer))
+        
+        # self.args = args
+        # raise Exception("implement me!")
+
+
+    def forward(self, x_tensor, inp_lens_tensor, y_tensor, out_lens_tensor):
+        """
+        
+
+        Parameters
+        ----------
+        x_tensor : tensor
+            [batch_size, sen_len_padded=19]
+        inp_lens_tensor : tensor
+            [batch_size]
+        y_tensor : tensor
+            [batch_size, sen_len_padded=65]
+        out_lens_tensor : tensor
+            [batch_size]
+
+        Returns
+        -------
+        fc_outputs : TYPE
+            DESCRIPTION.
+
+        """
+        """
+        :param x_tensor/y_tensor: either a non-batched input/output [sent len x voc size] or a batched input/output
+        [batch size x sent len x voc size]
+        
+        x_tensor: [sent len]
+        :param inp_lens_tensor/out_lens_tensor: either a vecor of input/output length [batch size] or a single integer.
+        lengths aren't needed if you don't batchify the training.
+        :return: loss of the batch
+        """
+        teacher_forcing_value = 0.5
+        batch_size = x_tensor.size()[0] 
+        
+        output_lens = out_lens_tensor.item()
+
+        (enc_output_each_word, enc_context_mask, enc_final_states_reshaped) = self.encode_input(x_tensor, inp_lens_tensor)
+        # enc_output_each_word.size()=[sent len, batch_size=1, num_directions*hidden_size]
+        # enc_context_mask.size() = [batch_size, sent len]
+        # enc_final_states_reshaped[0].size()=(num_layers * num_directions=1, batch=1, hidden_size)
+        
+        h_t = enc_final_states_reshaped
+        # store results of fc_output
+        fc_outputs = torch.zeros(output_lens, batch_size, len(self.output_indexer))
+        #fc_outputs.size() = [output_lens, batch_size=1, output_vocab_size=153]
+        
+        DECODER_START = torch.as_tensor(self.output_indexer.index_of('<SOS>'))
+        embedded_words_decoder = self.output_emb.forward(DECODER_START) # embedded_words = [batch_size, sent len = 19, emb_dim]
+        
+        # make dimensions right
+        embedded_words_decoder = embedded_words_decoder.unsqueeze(0).unsqueeze(0) 
+        # embedded_words_decoder.size()=(1,1,emb_dim)
+
+        for output_idx in range(output_lens):
+            (fc_output, h_t) = self.decoder.forward(embedded_words_decoder, h_t) # h_t[0].size()=(num_layers * num_directions=1, batch=1, hidden_size)
+            fc_outputs[output_idx] = fc_output
+            predicted_token_index = fc_output.argmax(1) 
+            
+            if np.random.random() < teacher_forcing_value:
+                embedded_words_decoder = self.output_emb.forward(y_tensor[0:batch_size, output_idx]) # embedded_words_decoder.size()=torch.Size([1, hid_size])
+            else:
+                embedded_words_decoder = self.output_emb.forward(predicted_token_index) #predicted_token.size()=torch.Size([1])
+            embedded_words_decoder = embedded_words_decoder.unsqueeze(0)
+            
+        return fc_outputs
+            
+        # raise Exception("implement me!")
+
+    def decode(self, test_data: List[Example]) -> List[List[Derivation]]:
+        """
+        
+
+        Parameters
+        ----------
+        test_data : List[Example]
+            dev_data_indexed
+            dev_data_indexed[1].x_indexed
+            >>> [38, 121, 9, 186, 187, 8]
+            dev_data_indexed[1].y_indexed
+        Returns
+        -------
+        List[List[Derivation]]
+            DESCRIPTION.
+
+        """
+        self.eval()
+        # input_max_len = 19#self.args.encoder_len_limit
+        input_max_len = np.max(np.asarray([len(ex.x_indexed) for ex in test_data]))
+        
+        all_test_input_data = make_padded_input_tensor(test_data, self.input_indexer, input_max_len, reverse_input=False) # array=(n_dev_exs,input_max_len=19)
+        
+        output_max_len = 65#self.args.decoder_len_limit
+        all_test_output_data = make_padded_output_tensor(test_data, self.output_indexer, output_max_len) # array=(n_dev_exs,input_max_len=65)
+        
+        # format data
+        all_input_lens = torch.from_numpy(np.asarray([len(ex.x_indexed) for ex in test_data]))
+        all_test_input_data = torch.from_numpy(all_test_input_data)
+        all_test_output_data = torch.from_numpy(all_test_output_data)
+        n_exs = all_test_input_data.size()[0]
+        Derivation_list = []
+        for ex_idx in range(n_exs):
+            x_tensor = all_test_input_data[ex_idx].unsqueeze(0)
+            inp_lens_tensor = all_input_lens[ex_idx].unsqueeze(0)
+            (enc_output_each_word, enc_context_mask, enc_final_states_reshaped) = self.encode_input(x_tensor, inp_lens_tensor)
+            h_t = enc_final_states_reshaped
+            
+            DECODER_START = torch.as_tensor(self.output_indexer.index_of('<SOS>'))
+            embedded_words_decoder = self.output_emb.forward(DECODER_START)
+            embedded_words_decoder = embedded_words_decoder.unsqueeze(0).unsqueeze(0) 
+            
+            output_idx = 0
+            predicted_token = '<SOS>'
+            Derivation_token = [] #Derivation_token = ['<PAD>'] * output_max_len
+            for output_idx in range(output_max_len):
+                (fc_output, h_t) = self.decoder.forward(embedded_words_decoder, h_t)
+                predicted_token_index = fc_output.argmax(1)
+                predicted_token = self.output_indexer.get_object(predicted_token_index.item())
+                
+                if predicted_token != '<EOS>':
+                    Derivation_token.append(predicted_token)#Derivation_token[output_idx] = predicted_token
+                    embedded_words_decoder = self.output_emb.forward(predicted_token_index)
+                    embedded_words_decoder = embedded_words_decoder.unsqueeze(0)
+                else:
+                    break
     
-    parser.add_argument('--decoder_len_limit', type=int, default=20, help='output length limit of the decoder')
-    parser.add_argument('--emb_dim', type=int, default=200, help='word embedding dimensions')
-    parser.add_argument('--hidden_dim', type=int, default=100, help='hidden layer size')
-    parser.add_argument('--n_layers', type=int, default=3, help='number of layers')
+            Derivation_list.append([Derivation(test_data[ex_idx], 1.0, Derivation_token)])
+            # print(Derivation_token)
+        return Derivation_list
 
-"""
-# how did I choose decoder_len_limit=20
-import numpy as np
-length_list = np.zeros(len(train_exs), dtype=int)
-for i in range(len(train)):
-    length_list[i] = len(train[i][1].split())
-
-for i in range(len(train_exs)):
-    length_list[i] = len(train_exs[i][0].split())
     
-max(length_list)
->>>15
+    def encode_input(self, x_tensor, inp_lens_tensor):
+        """
+        Runs the encoder (input embedding layer and encoder as two separate modules) on a tensor of inputs x_tensor with
+        inp_lens_tensor lengths.
+        YOU DO NOT NEED TO USE THIS FUNCTION. It's merely meant to illustrate the usage of EmbeddingLayer and RNNEncoder
+        as they're given to you, as well as show what kinds of inputs/outputs you need from your encoding phase.
+        :param x_tensor: [batch size, sent len] tensor of input token indices
+        :param inp_lens_tensor: [batch size] vector containing the length of each sentence in the batch
+        :param model_input_emb: EmbeddingLayer
+        :param model_enc: RNNEncoder
+        :return: the encoder outputs (per word), the encoder context mask (matrix of 1s and 0s reflecting which words
+        are real and which ones are pad tokens), and the encoder final states (h and c tuple)
+        E.g., calling this with x_tensor (0 is pad token):
+        [[12, 25, 0, 0],
+        [1, 2, 3, 0],
+        [2, 0, 0, 0]]
+        inp_lens = [2, 3, 1]
+        will return outputs with the following shape:
+        enc_output_each_word = 3 x 4 x dim, enc_context_mask = [[1, 1, 0, 0], [1, 1, 1, 0], [1, 0, 0, 0]],
+        enc_final_states = 3 x dim
+        """
+        input_emb = self.input_emb.forward(x_tensor)
+        (enc_output_each_word, enc_context_mask, enc_final_states) = self.encoder.forward(input_emb, inp_lens_tensor)
+        enc_final_states_reshaped = (enc_final_states[0].unsqueeze(0), enc_final_states[1].unsqueeze(0))
+        return (enc_output_each_word, enc_context_mask, enc_final_states_reshaped)
 
-length_list2 = np.zeros(len(dev), dtype=int)
-for i in range(len(dev)):
-    length_list2[i] = len(dev[i][1].split())
-
-max(length_list2)
->>>15
-# so I put 20
-"""
 
 class Seq2SeqSemanticParserAttention(nn.Module):
     def __init__(self, input_indexer, output_indexer, emb_dim, hidden_size, embedding_dropout=0.2, bidirect=True):
@@ -131,10 +322,9 @@ class Seq2SeqSemanticParserAttention(nn.Module):
         return fc_outputs
 
 
-    def decode(self, test_data: List[Example]):
+    def decode(self, test_data: List[Example]) -> List[List[Derivation]]:
         """
         
-
         Parameters
         ----------
         test_data : List[Example]
@@ -146,14 +336,14 @@ class Seq2SeqSemanticParserAttention(nn.Module):
         -------
         List[List[Derivation]]
             DESCRIPTION.
-
         """
         self.eval()
+        # input_max_len = 19#self.args.encoder_len_limit
         input_max_len = np.max(np.asarray([len(ex.x_indexed) for ex in test_data]))
         
         all_test_input_data = make_padded_input_tensor(test_data, self.input_indexer, input_max_len, reverse_input=False) # array=(n_dev_exs,input_max_len=19)
         
-        output_max_len = 20#TODO: self.args.decoder_len_limit
+        output_max_len = 65#self.args.decoder_len_limit
         all_test_output_data = make_padded_output_tensor(test_data, self.output_indexer, output_max_len) # array=(n_dev_exs,input_max_len=65)
         
         # format data
@@ -167,16 +357,17 @@ class Seq2SeqSemanticParserAttention(nn.Module):
             inp_lens_tensor = all_input_lens[ex_idx].unsqueeze(0)
             (enc_output_each_word, enc_context_mask, enc_final_states_reshaped) = self.encode_input(x_tensor, inp_lens_tensor)
             h_t = enc_final_states_reshaped
+            h_t_enc_all = enc_output_each_word
             
             DECODER_START = torch.as_tensor(self.output_indexer.index_of('<SOS>'))
             embedded_words_decoder = self.output_emb.forward(DECODER_START)
             embedded_words_decoder = embedded_words_decoder.unsqueeze(0).unsqueeze(0) 
             
-            output_idx = 0
+            # output_idx = 0
             predicted_token = '<SOS>'
             Derivation_token = [] #Derivation_token = ['<PAD>'] * output_max_len
             for output_idx in range(output_max_len):
-                (fc_output, h_t) = self.decoder.forward(embedded_words_decoder, h_t)
+                (fc_output, h_t) = self.decoder.forward(embedded_words_decoder, h_t, h_t_enc_all)
                 predicted_token_index = fc_output.argmax(1)
                 predicted_token = self.output_indexer.get_object(predicted_token_index.item())
                 
@@ -324,7 +515,10 @@ class RNNEncoder(nn.Module):
             h, c = hn[0][0], hn[1][0]
             h_t = (h, c)
         return (output, context_mask, h_t)
-    
+###################################################################################################################
+# End optional classes
+###################################################################################################################
+
 
 class RNNDecoder(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -383,9 +577,40 @@ class RNNDecoderAttention(nn.Module):
         output = torch.cat((c_vector, h_n), 1)
         fc_output = self.fc(output)
         return (fc_output, h_t_decoder)
+    # c_vector[batch_idx, ] = torch.dot(alpha[batch_idx, ] * h_t_enc_all.view(batch_size, input_len, -1)[batch_idx, ])
+    # alpha[batch_idx, ].size() alpha1 = alpha.unsqueeze(1)#.size() #alpha.size()
+    # torch.bmm(alpha1, h_t_enc_all.view(batch_size, input_len, -1)).size()
+def make_padded_input_tensor(exs: List[Example], input_indexer: Indexer, max_len: int, reverse_input=False) -> np.ndarray:
+    """
+    Takes the given Examples and their input indexer and turns them into a numpy array by padding them out to max_len.
+    Optionally reverses them.
+    :param exs: examples to tensor-ify
+    :param input_indexer: Indexer over input symbols; needed to get the index of the pad symbol
+    :param max_len: max input len to use (pad/truncate to this length)
+    :param reverse_input: True if we should reverse the inputs (useful if doing a unidirectional LSTM encoder)
+    :return: A [num example, max_len]-size array of indices of the input tokens
+    """
+    if reverse_input:
+        return np.array(
+            [[ex.x_indexed[len(ex.x_indexed) - 1 - i] if i < len(ex.x_indexed) else input_indexer.index_of(PAD_SYMBOL)
+              for i in range(0, max_len)]
+             for ex in exs])
+    else:
+        return np.array([[ex.x_indexed[i] if i < len(ex.x_indexed) else input_indexer.index_of(PAD_SYMBOL)
+                          for i in range(0, max_len)]
+                         for ex in exs])
 
+def make_padded_output_tensor(exs, output_indexer, max_len):
+    """
+    Similar to make_padded_input_tensor, but does it on the outputs without the option to reverse input
+    :param exs:
+    :param output_indexer:
+    :param max_len:
+    :return: A [num example, max_len]-size array of indices of the output tokens
+    """
+    return np.array([[ex.y_indexed[i] if i < len(ex.y_indexed) else output_indexer.index_of(PAD_SYMBOL) for i in range(0, max_len)] for ex in exs])
 
-def train_model(word_vectors, train_data: List[Example], dev_data: List[Example], input_indexer, output_indexer, args):
+def train_model(train_data: List[Example], dev_data: List[Example], input_indexer, output_indexer, args):
     #  -> Seq2SeqSemanticParser
     """
     Function to train the encoder-decoder model on the given data.
@@ -405,10 +630,10 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
     all_train_output_data = make_padded_output_tensor(train_data, output_indexer, output_max_len)
     all_test_output_data = make_padded_output_tensor(dev_data, output_indexer, output_max_len)
 
-
-    print("Train length: %i" % input_max_len)
-    print("Train output length: %i" % np.max(np.asarray([len(ex.y_indexed) for ex in train_data])))
-    print("Train matrix: %s; shape = %s" % (all_train_input_data, all_train_input_data.shape))
+    # if args.print_dataset:
+    #     print("Train length: %i" % input_max_len)
+    #     print("Train output length: %i" % np.max(np.asarray([len(ex.y_indexed) for ex in train_data])))
+    #     print("Train matrix: %s; shape = %s" % (all_train_input_data, all_train_input_data.shape))
         
     # Format data
     all_input_lens = torch.from_numpy(np.asarray([len(ex.x_indexed) for ex in train_data]))
@@ -419,15 +644,21 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
     all_train_output_data = torch.from_numpy(all_train_output_data)
     all_test_output_data = torch.from_numpy(all_test_output_data)
     
+    # First create a model
+    # seq2seq = Seq2SeqSemanticParser(input_indexer=input_indexer,
+    #                                 output_indexer=output_indexer,
+    #                                 emb_dim=args.emb_dim,
+    #                                 hidden_size=args.hidden_size)
+    
     # attention model
     seq2seq = Seq2SeqSemanticParserAttention(input_indexer=input_indexer,
                                              output_indexer=output_indexer,
                                              emb_dim=args.emb_dim,
-                                             hidden_size=args.hidden_dim)
+                                             hidden_size=args.hidden_size)
     
     n_epochs = args.epochs
-    # n_exs = all_train_input_data.size()[0] # number of training examples
-    n_exs = 10
+    n_exs = all_train_input_data.size()[0] # number of training examples
+    # n_exs = 10
     lr = args.lr
     batch_size = args.batch_size
     
@@ -461,3 +692,5 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
              optimizer.step()
         print("Total loss on epoch %i: %f" % (epoch_idx + 1, total_loss))
     return seq2seq
+    #raise Exception("Implement the rest of me to train your encoder-decoder model")
+    
