@@ -14,8 +14,8 @@ from models import *
 def _parse_args():
     parser = argparse.ArgumentParser(description='main.py')
     
-    parser.add_argument('--train_path', type=str, default='data/wikisql_train.dat', help='path to train data')
-    parser.add_argument('--dev_path', type=str, default='data/wikisql_dev.dat', help='path to dev data')
+    parser.add_argument('--train_path', type=str, default='data/wikisql_train_small.dat', help='path to train data')
+    parser.add_argument('--dev_path', type=str, default='data/wikisql_dev_small.dat', help='path to dev data')
     parser.add_argument('--test_path', type=str, default='data/wikisql_test.dat', help='path to blind test data')
     # parser.add_argument('--word_vecs_path', type=str, default='data/glove.6B.100d.txt', help='path to word embeddings to use')
     parser.add_argument('--word_vecs_path', type=str, default='data/glove.6B.50d-relativized.txt', help='path to word embeddings to use')

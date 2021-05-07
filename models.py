@@ -657,8 +657,8 @@ def train_model(train_data: List[Example], dev_data: List[Example], input_indexe
                                              hidden_size=args.hidden_size)
     
     n_epochs = args.epochs
-    n_exs = all_train_input_data.size()[0] # number of training examples
-    # n_exs = 10
+    # n_exs = all_train_input_data.size()[0] # number of training examples
+    n_exs = 10
     lr = args.lr
     batch_size = args.batch_size
     

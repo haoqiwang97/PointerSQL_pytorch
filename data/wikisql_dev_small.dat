@@ -1,0 +1,500 @@
+1-2668367-21 district incumbent party first^elected result candidates
+name the party for virginia^12
+1-2668367-21 select party district = virginia^12
+
+1-21471897-2 team^name races won rr1^pts. rr2^pts. rr3^pts. total^pts. ranking
+name the races for the prada^challenge
+1-21471897-2 select races team^name = prada^challenge
+
+2-15887683-3 television^service country language content hdtv package/option
+what is package/option , when content is tennis ?
+2-15887683-3 select package/option content = tennis
+
+2-1123243-2 driver constructor laps time/retired grid
+how many laps does driver luca^badoer have ?
+2-1123243-2 select laps driver = luca^badoer
+
+2-10746808-14 home^team home^team^score away^team away^team^score venue crowd date
+what is the sum of all the crowds that watched home^team north^melbourne at home ?
+2-10746808-14 sum crowd home^team = north^melbourne
+
+1-26565936-2 no.^in^series no.^in^season title directed^by written^by original^air^date u.s.^viewers^(millions)
+what was the first episode in the season directed^by nelson^mccormick ?
+1-26565936-2 min no.^in^season directed^by = nelson^mccormick
+
+2-18226024-7 year date home^team result visiting^team venue
+what date after year 2007 had the san^francisco^49ers as the visiting^team ?
+2-18226024-7 select date visiting^team = san^francisco^49ers year > 2007
+
+2-17584390-1 week date opponent result record game^site
+what team was the opponent in a week earlier than 17 on date june^17,^2006 ?
+2-17584390-1 select opponent week < 17 date = june^17,^2006
+
+1-16066063-1 rank city^1 city^2 2012^passengers^(in^millions) 2011^passengers^(in^millions) distance
+how many passengers ( in millions ) flew through along the route that is distance 1075km long in 2012 ?
+1-16066063-1 select 2012^passengers^(in^millions) distance = 1075km
+
+2-15717469-1 round opposition first^leg second^leg aggregate^score
+what was the first^leg score against opposition real^sociedad ?
+2-15717469-1 select first^leg opposition = real^sociedad
+
+1-191105-2 episode^title subject music^by lyrics^by performed^by first^aired
+when interjection is the subject who are the lyrics^by ?
+1-191105-2 select lyrics^by subject = interjection
+
+1-1046170-5 year division league regular^season playoffs u.s.^open^cup
+what are all the playoffs for regular^season is 1st,^atlantic^division
+1-1046170-5 select playoffs regular^season = 1st,^atlantic^division
+
+2-18182309-2 country date label format catalog^nr.
+what country is the debemur^morti^prod. label from ?
+2-18182309-2 select country label = debemur^morti^prod.
+
+2-18499677-5 name height weight spike 2008^club
+what is the name for the 2008^club of azs^olsztyn ?
+2-18499677-5 select name 2008^club = azs^olsztyn
+
+2-15442855-1 region date label format catalog
+which label has a date smaller than 2008 , and a catalog of fall^cd^006 ?
+2-15442855-1 select label date < 2008 catalog = fall^cd^006
+
+1-2679061-2 pick^# player position nationality nhl^team college/junior/club^team
+what is the nhl^team when the college , junior , club team is college/junior/club^team toronto^marlboros^(ohl) and the position is centre ?
+1-2679061-2 select nhl^team college/junior/club^team = toronto^marlboros^(ohl) position = centre
+
+2-14790824-3 year film award category result
+what was the result associated with the cinemaa^awards , and gabbar^singh film ?
+2-14790824-3 select result award = cinemaa^awards film = gabbar^singh
+
+2-18943807-1 call^sign frequency^mhz city^of^license erp^w class fcc^info
+what is the call^sign with a 222 erp^w ?
+2-18943807-1 select call^sign erp^w = 222
+
+2-17282079-3 date city event winner prize
+what event has a $248,004 prize ?
+2-17282079-3 select event prize = $248,004
+
+2-11628153-8 season competition matches draw lost points
+what is the total number of matches with a loss less than 5 in the 2008/2009 season and has a draw larger than 9 ?
+2-11628153-8 count matches lost < 5 season = 2008/2009 draw > 9
+
+1-27698941-6 game date team score high^points high^rebounds high^assists location^attendance record
+what is the score for the game with the record of 3–12 ?
+1-27698941-6 select score record = 3–12
+
+2-12853969-1 representative title presentation^of^credentials termination^of^mission appointed^by
+what is the termination^of^mission date for representative marsha^e.^barnes , the title ambassador^extraordinary^and^plenipotentiary ?
+2-12853969-1 select termination^of^mission title = ambassador^extraordinary^and^plenipotentiary representative = marsha^e.^barnes
+
+2-10661133-1 team game draw loss goal^gain goal^loss goal^diff point
+what team with a game smaller than 18 has the lowest goal^gain ?
+2-10661133-1 min goal^gain game < 18
+
+2-17978030-1 rank nation gold silver bronze total
+what is the fewest gold medals for the nation with 4 silvers and more than 4 bronze ?
+2-17978030-1 min gold silver = 4 bronze > 4
+
+2-1198472-1 date location opponent score competition
+what competition is located in location bamako ?
+2-1198472-1 select competition location = bamako
+
+2-11783766-21 player position date^of^birth^(age) caps club/province
+which player has a cap larger than caps 12 and clubs of club/province toulouse ?
+2-11783766-21 select player caps > 12 club/province = toulouse
+
+2-19004438-1 country event time date place
+what is the date of the event with a time of 2:23:47 ?
+2-19004438-1 select date time = 2:23:47
+
+1-1370559-1 locale skip w l pf pa ends^won ends^lost blank^ends stolen^ends shot^pct.
+what is the total number of ends^won when the locale is northwest^territories^yukon ?
+1-1370559-1 count ends^won locale = northwest^territories^yukon
+
+2-1302753-2 year awards categorie movie result
+what was the categorie in year 2002 at the awards berlin^international^film^festival that danielle darrieux was in ?
+2-1302753-2 select categorie year = 2002 awards = berlin^international^film^festival
+
+1-1211545-2 name location light^vehicle heavy^vehicle^(2^axles) heavy^vehicle^(3/4^axles) heavy^vehicle^(5+^axles)
+what is the toll for light vehicles at the plaza location between^bela^bela^and^modimolle ?
+1-1211545-2 select light^vehicle location = between^bela^bela^and^modimolle
+
+1-10706879-3 rd name pole^position fastest^lap winning^driver winning^team report
+the winning^team of the race , name los^angeles^times^500 is who ?
+1-10706879-3 select winning^team name = los^angeles^times^500
+
+2-18704095-2 place team played draw lost goals^scored goals^conceded points
+how many points did the team have that conceded goals^conceded 41 goals and finish in a place larger than 10 ?
+2-18704095-2 count points goals^conceded = 41 place > 10
+
+2-1214638-4 units type period^used formed^from trailers
+name the trailers for formed^from pan/pul/res^cars
+2-1214638-4 select trailers formed^from = pan/pul/res^cars
+
+2-1318870-2 d^41^√ d^42^√ d^43^√ d^44^o d^45^o d^46^o d^47^o d^48^o
+name the d^41^√ with d^44^o of r^13
+2-1318870-2 select d^41^√ d^44^o = r^13
+
+2-16642773-2 week date opponent result attendance
+what was the result in a week lower than 10 with an opponent of chicago^bears ?
+2-16642773-2 select result week < 10 opponent = chicago^bears
+
+2-18047346-1 rank^(2012) iata^code major^city^served state 2012 2011 2010 2009 2008 2007 2006 2005
+what is the greatest 2010 for major^city^served miami , state fl ?
+2-18047346-1 max 2010 state = fl major^city^served = miami
+
+2-14707564-6 ranking nationality name years icfc fcwc total
+what is the lowest ranking associated with a total of 23 ?
+2-14707564-6 min ranking total = 23
+
+1-17521433-1 country preliminary interview swimsuit evening^gown average
+what country had a swimsuit score of 8.788 ?
+1-17521433-1 select country swimsuit = 8.788
+
+1-2668243-18 district incumbent party first^elected result candidates
+name the result for first^elected being 1798^1825
+1-2668243-18 select result first^elected = 1798^1825
+
+2-12666456-2 nat. name since goals transfer^fee
+what the since year of the player with a transfer^fee of £^75k ?
+2-12666456-2 select since transfer^fee = £^75k
+
+2-14022127-4 date visitor score home decision attendance record
+date of march^30 involves what home ?
+2-14022127-4 select home date = march^30
+
+2-10526612-1 year driver nation^of^citizenship racing^series type^of^vehicle
+what driver has a type^of^vehicle stock^car vehicle with a year of 1999 ?
+2-10526612-1 select driver type^of^vehicle = stock^car year = 1999
+
+2-17968229-5 team 1982 1983 1984 total^points seasons points^average
+what team had 3 seasons and fewer than 27 in 1984 ?
+2-17968229-5 select team seasons = 3 1984 < 27
+
+1-13619053-4 game date team score high^points high^rebounds high^assists location^attendance record
+what was the score against team san^antonio ?
+1-13619053-4 select score team = san^antonio
+
+1-20016339-1 season class team motorcycle type races wins podiums poles fastest^laps pts position
+what 's the number of poles in the season where the team had a kalex motorcycle ?
+1-20016339-1 select poles motorcycle = kalex
+
+2-10298595-1 year tournament venue result extra
+tell me the venue for extra of short^race and year less than 1999
+2-10298595-1 select venue extra = short^race year < 1999
+
+2-14926835-1 rank mountain^pass elevation surface route
+what is the mountain^pass with a 21 rank ?
+2-14926835-1 select mountain^pass rank = 21
+
+2-12206491-7 date opponent score loss record
+what 's the loss for date september^16 ?
+2-12206491-7 select loss date = september^16
+
+2-15189770-2 years^tallest name height^ft^/^m floors year^completed
+what was the name of the building with 10 floors ?
+2-15189770-2 select name floors = 10
+
+1-15001681-1 year mens^singles womens^singles mens^doubles womens^doubles mixed^doubles
+in the year 2006 , the womens^singles had no^competition and the mens^doubles were roland^hilti^kilian^pfister , what were the womens^doubles
+1-15001681-1 select womens^doubles womens^singles = no^competition mens^doubles = roland^hilti^kilian^pfister year = 2006
+
+2-17214300-1 rider manufacturer laps time/retired grid
+when rider john^hopkins had 21 laps , what was the grid ?
+2-17214300-1 select grid laps = 21 rider = john^hopkins
+
+2-15348345-1 capital/region 1997 1998 1999 2000 2001 2002 2003 2004 2005 2006 2007
+how many 2007 's have a 2003 less than 36,4 , 27,9 as a 2001 , and a 1999 less than 25,2 ?
+2-15348345-1 sum 2007 2003 < 36,4 2001 = 27,9 1999 < 25,2
+
+2-107642-1 tujunga la^crescenta-^montrose glendale la^cañada^flintridge pasadena
+what is the figure for la^crescenta-^montrose when gelndale is glendale $57,112 ?
+2-107642-1 select la^crescenta-^montrose glendale = $57,112
+
+2-12152481-1 year men's^singles women's^singles men's^doubles women's^doubles mixed^doubles
+what year did carolina^marin win the women's^singles ?
+2-12152481-1 select year women's^singles = carolina^marin
+
+2-1251975-1 year start qual rank finish laps
+what is the highest number of laps that also has a finish total of 8 ?
+2-1251975-1 max laps finish = 8
+
+1-2508175-1 country annual^co2^emissions^(in^thousands^of^metric^tons) gdp^(current,^in^billions^of^us^dollars) gdp^per^emissions^(in^us^dollars^per^ton) gdp^(ppp,^in^billions^of^current^international^dollars) ppp^gdp^per^emissions^(in^international^dollars^per^ton)
+when the gdp^per^emissions^(in^us^dollars^per^ton) is 3903 , what is the maximum annual^co2^emissions^(in^thousands^of^metric^tons) ?
+1-2508175-1 max annual^co2^emissions^(in^thousands^of^metric^tons) gdp^per^emissions^(in^us^dollars^per^ton) = 3903
+
+2-11570261-11 date tournament winning^score margin^of^victory runner(s)-up
+which tournament has a margin^of^victory of 7^strokes
+2-11570261-11 select tournament margin^of^victory = 7^strokes
+
+2-11602313-1 model^number sspec^number frequency l2^cache mult. voltage socket release^date part^number(s) release^price^(^usd^)
+what part^number(s) has a frequency of 2.4^ghz ?
+2-11602313-1 select part^number(s) frequency = 2.4^ghz
+
+2-10747009-7 home^team home^team^score away^team away^team^score venue crowd date
+how many people were present in a total of every crowd at the mcg venue ?
+2-10747009-7 sum crowd venue = mcg
+
+2-11902503-8 game march opponent score decision record
+which score 's game was less than 69 when the march was bigger than 2 and the opponents were the new^york^islanders ?
+2-11902503-8 select score game < 69 march > 2 opponent = new^york^islanders
+
+2-1646586-3 taper large^end small^end length taper/^ft taper/^in angle^from^center/°
+which angle^from^center/° has a taper/^ft smaller than 0.6000000000000001 ?
+2-1646586-3 count angle^from^center/° taper/^ft < 0.6000000000000001
+
+2-15211906-2 date opponent venue result attendance
+name the venue for staines^town
+2-15211906-2 select venue opponent = staines^town
+
+2-16471432-4 series^# season^# title directed^by original^air^date
+which season^# has a title of "jaunt^(part^2)" , and a series^# larger than 45 ?
+2-16471432-4 max season^# title = "jaunt^(part^2)" series^# > 45
+
+1-25401874-1 number name games^played games^started goals assists points shots
+how many names are listed for the player with 50 points ?
+1-25401874-1 count name points = 50
+
+2-18652198-1 pick team player position college
+what is the highest pick for the position of defensive^end ?
+2-18652198-1 max pick position = defensive^end
+
+1-25933764-1 locale skip w l pf pa ends^won ends^lost blank^ends stolen^ends shot^pct.
+if the skip is kelly^scott , what is the pf total number ?
+1-25933764-1 count pf skip = kelly^scott
+
+2-11643141-2 date visitor score home record
+which home team had a visitor of ottawa^senators with a score of 1–5 ?
+2-11643141-2 select home visitor = ottawa^senators score = 1–5
+
+2-15796057-1 week^# theme original^artist order^# result
+what is the week number with phil^collins as the original^artist ?
+2-15796057-1 select week^# original^artist = phil^collins
+
+2-18379129-3 play author company base country
+what is the company when the country is greece and the author is aeschylus ?
+2-18379129-3 select company country = greece author = aeschylus
+
+2-18009462-6 place player country score to^par
+what was the score for player peter^lonard ?
+2-18009462-6 select score player = peter^lonard
+
+1-1529260-2 year dates champion country score to^par margin^of^victory purse^(^us$^) winners^share
+what is the lowest year listed ?
+1-1529260-2 min year
+
+2-17357560-1 year competition venue position event
+which competition has an event of 50km , a year earlier than 2010 and a position of 3rd ?
+2-17357560-1 select competition event = 50km year < 2010 position = 3rd
+
+2-17100961-24 round pick overall name position college
+what pick did name george^rosso get drafted when the overall was less than 296 ?
+2-17100961-24 count pick name = george^rosso overall < 296
+
+2-1731607-1 season skip third second lead
+which season has a third of colin^hodgson ?
+2-1731607-1 select season third = colin^hodgson
+
+2-18628670-2 year title us^country riaa label
+what is the title of the album that had a riaa of gold ?
+2-18628670-2 select title riaa = gold
+
+2-17608926-6 position played points wins draws losses goals^for goals^against goal^difference
+can you tell me the lowest played that has the position larger than 2 , and the draws smaller than 2 , and the goals^against smaller than 18 ?
+2-17608926-6 min played position > 2 draws < 2 goals^against < 18
+
+2-1104515-3 d^41^o d^42^o d^43^o d^44^o d^45^+ r^55^+ r^54^+ r^53^+ r^52^o r^51^o
+what is the value of d^42^o that has an r^53^+ value of r^8 ?
+2-1104515-3 select d^42^o r^53^+ = r^8
+
+2-17746037-3 port^fairy^fl wins byes losses draws against
+how many draws when the port^fairy^fl is hawkesdale and there are more than 9 wins ?
+2-17746037-3 max draws port^fairy^fl = hawkesdale wins > 9
+
+2-1233315-1 year chassis engine tyres points
+what is the engine for a vehicle in year 1960 ?
+2-1233315-1 select engine year = 1960
+
+2-11866-4 subframe^# page^# name word^# bits
+what is the total word count with a subframe count greater than 3 ?
+2-11866-4 sum word^# subframe^# > 3
+
+2-17231351-3 place player country score to^par
+what is to^par , when place is " t9 " , and when player is " lee^trevino " ?
+2-17231351-3 select to^par place = t9 player = lee^trevino
+
+2-14655713-1 pick^# round player position college
+what is the position of pick^# 321 ?
+2-14655713-1 select position pick^# = 321
+
+1-11630008-8 series^# season^# title directed^by written^by original^air^date production^code
+what is the title of the episode with the production^code 624 ?
+1-11630008-8 select title production^code = 624
+
+2-144367-5 vol.^# title material^collected publication^date isbn
+how many volume numbers have the title of darkness^falls ?
+2-144367-5 sum vol.^# title = darkness^falls
+
+2-14828476-4 game date home^team result road^team
+which game had philadelphia as its home^team and was played on date april^23 ?
+2-14828476-4 select game home^team = philadelphia date = april^23
+
+2-15187735-17 series^ep. episode netflix segment^a segment^b segment^c segment^d
+episode smaller than 210 had what segment^c ?
+2-15187735-17 select segment^c episode < 210
+
+2-16185580-1 rank college first^season seasons wins losses
+what is the total of first^season games with 1537 wins and a season greater than seasons 109 ?
+2-16185580-1 sum first^season wins = 1537 seasons > 109
+
+2-1851542-3 tournament wins top-5 top-25 events cuts^made
+how many total cuts were made in events with more than 0 wins and exactly 0 top-5s ?
+2-1851542-3 count cuts^made top-5 = 0 wins > 0
+
+2-1269221-1 team manager captain kit^manufacturer shirt^sponsor
+which manager has manchester^city as the team ?
+2-1269221-1 select manager team = manchester^city
+
+2-11365848-3 year winner^and^nominees original^title country director
+what was the original^title of the^king's^speech ?
+2-11365848-3 select original^title winner^and^nominees = the^king's^speech
+
+1-18539834-2 japanese^title romaji^title tv^station time^frame starring^actors theme^song(s) episodes average^ratings
+who were the starting actors in the time^frame of tuesday^22:00~22:54^8^april^2008^to^17^june^2008 ?
+1-18539834-2 select starring^actors time^frame = tuesday^22:00~22:54^8^april^2008^to^17^june^2008
+
+2-17142454-4 position team^#1 agg. team^#2 1st^leg 2nd^leg
+what is the 2nd^leg of the 4-9 agg. ?
+2-17142454-4 select 2nd^leg agg. = 4-9
+
+1-27539272-5 game november opponent score location/attendance record points
+what is the record for score 1-3 ?
+1-27539272-5 select record score = 1-3
+
+2-10809444-12 home^team home^team^score away^team away^team^score venue crowd date
+where was the game played where the away^team has a score of away^team^score 7.6^(48) ?
+2-10809444-12 select venue away^team^score = 7.6^(48)
+
+2-18826487-1 school location mascot enrollment^08-09 ihsaa^class ihsaa^class^football county year^joined
+what 's the ihsaa^class when the school is seymour ?
+2-18826487-1 select ihsaa^class school = seymour
+
+2-13741576-4 club played drawn lost points^for points^against tries^for tries^against try^bonus losing^bonus points
+if the played was played , what is the lost ?
+2-13741576-4 select lost played = played
+
+1-27756314-11 game date team score high^points high^rebounds high^assists location^attendance record
+who did the most high^rebounds on date april^6 ?
+1-27756314-11 select high^rebounds date = april^6
+
+2-16400024-5 model^number frequency l2^cache mult. voltage socket release^date
+what model^number uses standard^voltage socket ?
+2-16400024-5 select model^number socket = standard^voltage
+
+2-1238468-1 year start qual rank finish laps
+what was the finish place with a qual of 123.660 ?
+2-1238468-1 select finish qual = 123.660
+
+2-15400315-1 rank nation gold silver bronze total
+what is the nation when there is a total less than 27 , gold is less than 1 , and bronze is more than 1 ?
+2-15400315-1 select nation total < 27 gold < 1 bronze > 1
+
+1-12104319-1 year mens^singles womens^singles mens^doubles womens^doubles mixed^doubles
+name the men 's singles of marina^yakusheva^elena^shimko
+1-12104319-1 select mens^singles womens^doubles = marina^yakusheva^elena^shimko
+
+1-23486853-7 game date opponent score location attendance record points
+what scores happened on date february^11 ?
+1-23486853-7 select score date = february^11
+
+1-10342194-3 district total^amount^of^trees prevailing^types,^% amount^of^old^trees amount^of^trees,^that^require^replacement
+what is the amount^of^trees,^that^require^replacement when district is leninsky ?
+1-10342194-3 select amount^of^trees,^that^require^replacement district = leninsky
+
+2-117452-2 years supervisor clerk treasurer highway^commissioners
+who was the clerk when the highway commissioner was highway^commissioners albert^lewis ?
+2-117452-2 select clerk highway^commissioners = albert^lewis
+
+1-1708050-1 year starts wins top^5 top^10 poles avg.^start avg.^finish winnings position team(s)
+name the starts when position is 16th
+1-1708050-1 select starts position = 16th
+
+1-13464416-7 game date team score high^points high^rebounds high^assists location^attendance record
+how many locations have a record of 14-38 ?
+1-13464416-7 count location^attendance record = 14-38
+
+2-14889951-2 year class team points rank wins
+which wins is the highest one that has a class of 500cc , and points smaller than 6 ?
+2-14889951-2 max wins class = 500cc points < 6
+
+2-1077708-2 region year label format catalog
+what was the label candlelight^records catalog of candle053tin format ?
+2-1077708-2 select format label = candlelight^records catalog = candle053tin
+
+2-14209455-5 rank rider team speed time
+what time did team kawasaki^zx10^1000cc have ?
+2-14209455-5 select time team = kawasaki^zx10^1000cc
+
+2-12312050-1 season team^name games losses points
+what 's the total number of points when the team^name vancouver^burrards have fewer than 9 losses and more than 24 games ?
+2-12312050-1 count points losses < 9 games > 24 team^name = vancouver^burrards
+
+1-123462-2 election #^of^candidates^nominated #^of^seats^won #^of^total^votes %^of^popular^vote
+what year was the election when the #^of^seats^won was 65 ?
+1-123462-2 select election #^of^seats^won = 65
+
+2-17069469-2 date venue score result competition
+what competition had a score of 2–0 ?
+2-17069469-2 select competition score = 2–0
+
+2-17751846-3 tie^no home^team score away^team date
+in the tie where southampton was the away^team , who was the home^team ?
+2-17751846-3 select home^team away^team = southampton
+
+2-17538072-1 season series team races wins poles f/laps points position
+how many poles are there in the formula^three^euroseries in the 2008 season with more than 0 f/laps ?
+2-17538072-1 sum poles series = formula^three^euroseries season = 2008 f/laps > 0
+
+2-17310913-4 game december opponent score record
+what is record , when game is " 24 " ?
+2-17310913-4 select record game = 24
+
+2-1122672-1 driver constructor laps time/retired grid
+what is the time/retired of driver carlos^reutemann who was driving a constructor brabham^-^alfa^romeo ?
+2-1122672-1 select time/retired constructor = brabham^-^alfa^romeo driver = carlos^reutemann
+
+2-16658270-1 year award^ceremony category show character result
+which show was nominated for the category ita^milestone^award at the award^ceremony indian^television^academy^awards ?
+2-16658270-1 select show award^ceremony = indian^television^academy^awards category = ita^milestone^award
+
+1-22705586-1 number name height^(m) date^of^birth position nationality
+name the date^of^birth for 27/07/86
+1-22705586-1 select name date^of^birth = 27/07/86
+
+2-18178534-2 opposing^teams against date venue status
+what is against , when opposing^teams is " australia " , and when date is " 27/07/1991 " ?
+2-18178534-2 select against opposing^teams = australia date = 27/07/1991
+
+1-15621965-8 player no. nationality position years^in^orlando school/club^team
+what jersey number did player al^harrington wear
+1-15621965-8 max no. player = al^harrington
+
+2-12608427-7 name country status transfer^window transfer^fee source
+what was the transfer^fee for the transfer^window summer transfer involving the country sco named crainey ?
+2-12608427-7 select transfer^fee transfer^window = summer country = sco name = crainey
+
+2-12489563-2 year alabama arkansas auburn ole^miss mississippi^st.
+who is the arkansas player associated with alabama ken^stabler ?
+2-12489563-2 select arkansas alabama = ken^stabler
+
+1-10342194-3 district total^amount^of^trees prevailing^types,^% amount^of^old^trees amount^of^trees,^that^require^replacement
+what is the total^amount^of^trees when district is leninsky ?
+1-10342194-3 max total^amount^of^trees district = leninsky
+
+2-17100961-48 round pick overall name position college
+what is the average overall that has a pick less than 20 , north^carolina as the college , with a round less than 8 ?
+2-17100961-48 avg overall pick < 20 college = north^carolina round < 8
+
+1-16066063-1 rank city^1 city^2 2012^passengers^(in^millions) 2011^passengers^(in^millions) distance
+in 2011 , which city is listed first along the route that had 2011^passengers^(in^millions) 7.6+ million passengers ?
+1-16066063-1 select city^1 2011^passengers^(in^millions) = 7.6+
+
