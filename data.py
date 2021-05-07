@@ -2,6 +2,7 @@ from utils import *
 from typing import List, Tuple
 from collections import Counter
 import numpy as np
+import torch
 
 
 class Example(object):
@@ -24,12 +25,19 @@ class Example(object):
         self.y_tok = y_tok
         self.y_indexed = y_indexed
         self.header_length = header_length
-        self.tok_to_idx = Counter()
+        tok_to_idx = {}
         for idx, tok in enumerate(x_tok):
-            self.tok_to_idx[tok] = idx
+            if tok not in tok_to_idx:
+                tok_to_idx[tok] = []
+            tok_to_idx[tok].append(idx)
         self.copy_indexer = Indexer()
-        for tok in self.tok_to_idx.keys():
+        for tok in tok_to_idx.keys():
             self.copy_indexer.add_and_get_index(tok)
+        self.mask = torch.zeros((len(x_tok), len(tok_to_idx)))
+        for tok in tok_to_idx:
+            idx = tok_to_idx[tok]
+            for i in idx:
+                self.mask[i][self.copy_indexer.index_of(tok)] = 1.
 
     def __repr__(self):
         return " ".join(self.x_tok) + " => " + " ".join(self.y_tok) + "\n   indexed as: " + repr(
@@ -37,6 +45,7 @@ class Example(object):
 
     def __str__(self):
         return self.__repr__()
+
 
 # class Example(object):
 #     """
@@ -62,8 +71,7 @@ class Example(object):
 
 #     def __str__(self):
 #         return self.__repr__()
-    
-    
+
 
 class Derivation(object):
     """
@@ -118,13 +126,13 @@ def load_dataset(filename: str) -> List[Tuple[str, str, int]]:
             table_column_name = raw_lines[example_idx * 4].strip('\n')
             query = raw_lines[example_idx * 4 + 1].strip('\n')
             y = raw_lines[example_idx * 4 + 2].strip('\n')
-            
+
             if len(y.split()) > 1:
                 y = hardcode_y(y)
                 # c[len(y.split())]+=1#
                 dataset.append((table_column_name + ' ' + query, y, len(table_column_name.split())))
     print("Loaded %i examples from file %s" % (n_examples, filename))
-    
+
     return dataset
 
 
@@ -138,31 +146,39 @@ def hardcode_y(y):
             sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from' + ' ' + y_toc[0]
         else:
             sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from' + ' ' + y_toc[0]
-            
+
     elif y_toc_len == 6:
         if s == 'select':
             sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-3:])
         else:
             sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-3:])
-    
+
     elif y_toc_len == 9:
         if s == 'select':
-            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(
+                y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
         else:
-            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
-    
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(
+                y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+
     elif y_toc_len == 12:
         if s == 'select':
-            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(
+                y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
         else:
-            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
-            
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(
+                y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+
     elif y_toc_len == 15:
         if s == 'select':
-            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-12:-9]) + ' and ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+            sql_y = y_toc[1] + ' <GO> ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(
+                y_toc[-12:-9]) + ' and ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(
+                y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
         else:
-            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(y_toc[-12:-9]) + ' and ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
-    
+            sql_y = 'select ' + y_toc[1] + ' ' + y_toc[2] + ' from ' + y_toc[0] + ' where ' + ' '.join(
+                y_toc[-12:-9]) + ' and ' + ' '.join(y_toc[-9:-6]) + ' and ' + ' '.join(
+                y_toc[-6:-3]) + ' and ' + ' '.join(y_toc[-3:])
+
     return sql_y
 
 
@@ -242,7 +258,8 @@ def index_data(data, input_indexer: Indexer, output_indexer: Indexer, example_le
     :return:
     """
     data_indexed = []
-    for (x, y, z) in data: # data[1] = ('1-1000181-1 state/territory text/background^colour format current^slogan current^series notes what is the current^series where the notes new^series^began^in^june^2011 ?', '1-1000181-1 select current^series notes = new^series^began^in^june^2011', 7)
+    for (x, y,
+         z) in data:  # data[1] = ('1-1000181-1 state/territory text/background^colour format current^slogan current^series notes what is the current^series where the notes new^series^began^in^june^2011 ?', '1-1000181-1 select current^series notes = new^series^began^in^june^2011', 7)
         x_tok = tokenize(x)
         y_tok = tokenize(y)[0:example_len_limit]
         data_indexed.append(Example(x, x_tok, index(x_tok, input_indexer), y, y_tok,
@@ -250,7 +267,8 @@ def index_data(data, input_indexer: Indexer, output_indexer: Indexer, example_le
     return data_indexed
 
 
-def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0, use_pretrained = True) -> (List[Example], List[Example], List[Example], Indexer, Indexer):
+def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_limit, unk_threshold=0.0,
+                   use_pretrained=True) -> (List[Example], List[Example], List[Example], Indexer, Indexer):
     """
     Indexes train and test datasets where all words occurring less than or equal to unk_threshold times are
     replaced by UNK tokens.
@@ -263,11 +281,11 @@ def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_li
     :return:
     """
     input_word_counts = Counter()
-            
+
     if use_pretrained == True:
         input_indexer = word_vectors.word_indexer  # Indexer()
         output_indexer = word_vectors.word_indexer  # Indexer()#
-        
+
         input_indexer.add_and_get_index(PAD_SYMBOL)
         input_indexer.add_and_get_index(UNK_SYMBOL)
         output_indexer.add_and_get_index(PAD_SYMBOL)
@@ -283,16 +301,16 @@ def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_li
         # for word in input_word_counts.keys():
         #     if input_word_counts[word] > unk_threshold + 0.5:
         #         input_indexer.add_and_get_index(word) 
-                
+
     else:
         # Count words and build the indexers
         for (x, y, z) in train_data:
             for word in tokenize(x):
                 input_word_counts[word] += 1.0
-            
+
         input_indexer = Indexer()
         output_indexer = Indexer()
-        
+
         # Reserve 0 for the pad symbol for convenience
         input_indexer.add_and_get_index(PAD_SYMBOL)
         input_indexer.add_and_get_index(UNK_SYMBOL)
@@ -307,9 +325,9 @@ def index_datasets(word_vectors, train_data, dev_data, test_data, example_len_li
         # Index all input words above the UNK threshold
         for word in input_word_counts.keys():
             if input_word_counts[word] > unk_threshold + 0.5:
-                input_indexer.add_and_get_index(word)        
+                input_indexer.add_and_get_index(word)
 
-    # Index all output tokens in train
+                # Index all output tokens in train
     for (x, y, z) in train_data:
         for y_tok in tokenize(y):
             output_indexer.add_and_get_index(y_tok)
@@ -383,5 +401,3 @@ def make_padded_output_tensor(exs, output_indexer, max_len):
     return np.array(
         [[ex.y_indexed[i] if i < len(ex.y_indexed) else output_indexer.index_of(PAD_SYMBOL) for i in range(0, max_len)]
          for ex in exs])
-
-
