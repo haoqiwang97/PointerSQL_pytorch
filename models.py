@@ -23,7 +23,7 @@ def add_models_args(parser):
     parser.add_argument('--batch_size', type=int, default=1, help='batch size')
 
     # 65 is all you need for GeoQuery
-    parser.add_argument('--decoder_len_limit', type=int, default=20, help='output length limit of the decoder')
+    parser.add_argument('--decoder_len_limit', type=int, default=22, help='output length limit of the decoder')
     parser.add_argument('--emb_dim', type=int, default=100, help='word embedding dimensions')
     parser.add_argument('--hidden_size', type=int, default=100, help='hidden layer size')
     # parser.add_argument('--encoder_len_limit', type=int, default=19, help='input length limit of the encoder')
