@@ -62,8 +62,11 @@ if __name__ == '__main__':
 
     decoder = train_model(word_vectors, train_data_indexed, dev_data_indexed, input_indexer, output_indexer, args)
     
-    decoder.decode(train_data_indexed[:10])
-    # TODO: index train based on embedding?
-# TODO: table len, query len, do I need to store these values?
-# TODO: maintain a small built-in decoder vocabulary (sized 17)
+    print("=======TRAIN SET=======")
+    evaluate(train_data_indexed, decoder)
+    
+    print("=======DEV SET=======")
+    evaluate(dev_data_indexed, decoder)
+
+
 # TODO: start embedding layer in encoder 
