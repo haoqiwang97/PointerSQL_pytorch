@@ -27,8 +27,8 @@ def add_models_args(parser):
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--batch_size', type=int, default=1, help='batch size')
 
-    parser.add_argument('--decoder_len_limit', type=int, default=20, help='output length limit of the decoder')
-    parser.add_argument('--emb_dim', type=int, default=200, help='word embedding dimensions')
+    parser.add_argument('--decoder_len_limit', type=int, default=22, help='output length limit of the decoder')
+    parser.add_argument('--emb_dim', type=int, default=100, help='word embedding dimensions')
     parser.add_argument('--embedding_dropout', type=float, default=0.2, help='embedding layer dropout rate')
     parser.add_argument('--hidden_dim', type=int, default=100, help='hidden layer size')
     parser.add_argument('--n_layers', type=int, default=3, help='number of layers')
@@ -42,10 +42,13 @@ for i in range(len(train)):
     length_list[i] = len(train[i][1].split())
 
 for i in range(len(train_exs)):
-    length_list[i] = len(train_exs[i][0].split())
+    length_list[i] = len(train_exs[i][1].split())
+    if len(train_exs[i][1].split()) == 21:
+        print(train_exs[i][1].split())
+        break
     
 max(length_list)
->>>15
+>>>22
 
 length_list2 = np.zeros(len(dev), dtype=int)
 for i in range(len(dev)):
@@ -182,7 +185,7 @@ class Seq2Seq(nn.Module):
                 for beam_state, score in end_beam.get_elts_and_scores():
                     test_ex_de.append(Derivation(test_ex, exp(score), beam_state[0]))
                 test_derives.append(test_ex_de)
-                print(test_ex_de[0].y_toks)
+                # print(test_ex_de[0].y_toks)
         return test_derives
 
     # def encode_input(self, x_tensor, inp_lens_tensor):
@@ -503,8 +506,8 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
                       embedding_dropout=args.embedding_dropout)
 
     n_epochs = args.epochs
-    # n_exs = all_train_input_data.size()[0]
-    n_exs = 10
+    n_exs = all_train_input_data.shape[0]
+    # n_exs = 10
     lr = args.lr
     batch_size = args.batch_size
 
@@ -556,7 +559,8 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
                     # output = attn_over_tok
                     # y_tensor_[0][idx] = sample.copy_indexer.index_of(
                     #     output_indexer.get_object(y_tensor[0][idx].item()))
-
+                if idx == -1:
+                    print(idx)
                 loss += criterion(output, y_tensor[:, idx])
 
             total_loss += loss

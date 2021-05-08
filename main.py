@@ -4,7 +4,7 @@
 Created on Sun Apr 18 23:48:35 2021
 
 @author: haoqiwang
-"""
+r"""
 import argparse
 from utils import *
 from data import *
@@ -14,8 +14,8 @@ from models import *
 def _parse_args():
     parser = argparse.ArgumentParser(description='main.py')
     
-    parser.add_argument('--train_path', type=str, default='data/wikisql_train.dat', help='path to train data')
-    parser.add_argument('--dev_path', type=str, default='data/wikisql_dev.dat', help='path to dev data')
+    parser.add_argument('--train_path', type=str, default='data/wikisql_train_small.dat', help='path to train data')
+    parser.add_argument('--dev_path', type=str, default='data/wikisql_dev_small.dat', help='path to dev data')
     parser.add_argument('--test_path', type=str, default='data/wikisql_test.dat', help='path to blind test data')
     #parser.add_argument('--word_vecs_path', type=str, default='data/glove.6B.100d.txt', help='path to word embeddings to use')
     parser.add_argument('--word_vecs_path', type=str, default='data/glove.6B.50d-relativized.txt', help='path to word embeddings to use')
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     else:
         word_vectors = None
         
-    train_data_indexed, dev_data_indexed, test_data_indexed, input_indexer, output_indexer = index_datasets(word_vectors, train_exs[:10], dev_exs, test_exs, args.decoder_len_limit, use_pretrained=args.use_pretrained)
+    train_data_indexed, dev_data_indexed, test_data_indexed, input_indexer, output_indexer = index_datasets(word_vectors, train_exs, dev_exs, test_exs, args.decoder_len_limit, use_pretrained=args.use_pretrained)
     # no pretrained
     # train_data_indexed[1].x='1-1000181-1 state/territory text/background^colour format current^slogan current^series notes what is the current^series where the notes new^series^began^in^june^2011 ?'
     # train_data_indexed[1].x_tok
