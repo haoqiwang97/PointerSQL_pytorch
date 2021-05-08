@@ -401,3 +401,43 @@ def make_padded_output_tensor(exs, output_indexer, max_len):
     return np.array(
         [[ex.y_indexed[i] if i < len(ex.y_indexed) else output_indexer.index_of(PAD_SYMBOL) for i in range(0, max_len)]
          for ex in exs])
+
+
+def evaluate(test_data: List[Example], decoder, example_freq=50, print_output=True, outfile=None):
+    pred_derivations = decoder.decode(test_data)
+    selected_derivs = [derivs[0] for derivs in pred_derivations]
+    
+    num_exact_match = 0
+    num_tokens_correct = 0
+    # num_denotation_match = 0
+    total_tokens = 0
+    
+    for i, ex in enumerate(test_data):
+        pred_y_toks = selected_derivs[i].y_toks if i < len(selected_derivs) else [""]
+        if print_output and i % example_freq == example_freq - 1:
+            print('Example %d' % i)
+            print('  x      = "%s"' % ex.x)
+            print('  y_tok  = "%s"' % ex.y_tok)
+            print('  y_pred = "%s"' % pred_y_toks)
+        
+        # Compute accuracy metrics
+        y_pred = ' '.join(pred_y_toks)
+        # Check exact match
+        if y_pred == ' '.join(ex.y_tok):
+            num_exact_match += 1
+
+        # Check position-by-position token correctness
+        num_tokens_correct += sum(a == b for a, b in zip(pred_y_toks, ex.y_tok))
+        total_tokens += len(ex.y_tok)            
+            
+    if print_output:
+        print("Exact logical form matches: %s" % (render_ratio(num_exact_match, len(test_data))))
+        print("Token-level accuracy: %s" % (render_ratio(num_tokens_correct, total_tokens)))
+        # print("Denotation matches: %s" % (render_ratio(num_denotation_match, len(test_data))))
+    
+    evaluation_result = [num_exact_match / len(test_data), num_tokens_correct / total_tokens]
+    return evaluation_result
+
+
+def render_ratio(numer, denom):
+    return "%i / %i = %.3f" % (numer, denom, float(numer) / denom)
