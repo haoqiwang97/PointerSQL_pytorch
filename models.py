@@ -19,6 +19,7 @@ from typing import List
 from torch import optim
 from math import exp
 from torch import autograd
+import time
 
 
 def add_models_args(parser):
@@ -514,6 +515,8 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
     seq2seq.train()
     # with autograd.detect_anomaly():
     for epoch_idx in range(n_epochs):
+        start = time.time()
+        
         ex_indices = [i for i in range(0, n_exs)]
         np.random.shuffle(ex_indices)
         total_loss = 0.0
@@ -561,6 +564,7 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
             loss.backward()
             optimizer.step()
         print("Total loss on epoch %i: %f" % (epoch_idx + 1, total_loss))
+        print("Time elapsed: ", time.time() - start)
     return seq2seq
 
 
