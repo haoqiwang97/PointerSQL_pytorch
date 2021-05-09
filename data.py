@@ -415,6 +415,8 @@ def evaluate(test_data: List[Example], decoder, example_freq=50, print_output=Tr
     for i, ex in enumerate(test_data):
         pred_y_toks = selected_derivs[i].y_toks if i < len(selected_derivs) else [""]
         if print_output and i % example_freq == example_freq - 1:
+            
+            if '<GO>' in ex.y_tok: ex.y_tok.remove('<GO>') # hardcode to remove '<GO>'
             print('Example %d' % i)
             print('  x      = "%s"' % ex.x)
             print('  y_tok  = "%s"' % ex.y_tok)
@@ -423,6 +425,8 @@ def evaluate(test_data: List[Example], decoder, example_freq=50, print_output=Tr
         # Compute accuracy metrics
         y_pred = ' '.join(pred_y_toks)
         # Check exact match
+
+        
         if y_pred == ' '.join(ex.y_tok):
             num_exact_match += 1
 

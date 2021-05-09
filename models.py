@@ -23,7 +23,7 @@ import time
 
 
 def add_models_args(parser):
-    # parser.add_argument('--epochs', type=int, default=10, help='num epochs to train for')
+    parser.add_argument('--epochs', type=int, default=1, help='num epochs to train for')
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--batch_size', type=int, default=1, help='batch size')
 
@@ -506,8 +506,8 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
                       embedding_dropout=args.embedding_dropout)
 
     n_epochs = args.epochs
-    n_exs = all_train_input_data.shape[0]
-    # n_exs = 10
+    # n_exs = all_train_input_data.shape[0]
+    n_exs = 10
     lr = args.lr
     batch_size = args.batch_size
 
@@ -559,8 +559,8 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
                     # output = attn_over_tok
                     # y_tensor_[0][idx] = sample.copy_indexer.index_of(
                     #     output_indexer.get_object(y_tensor[0][idx].item()))
-                if idx == -1:
-                    print(idx)
+                # if idx == -1:
+                #     print(idx)
                 loss += criterion(output, y_tensor[:, idx])
 
             total_loss += loss
