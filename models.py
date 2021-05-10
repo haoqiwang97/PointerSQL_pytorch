@@ -18,7 +18,7 @@ def add_models_args(parser):
     """
     # Some common arguments for your convenience
     parser.add_argument('--seed', type=int, default=0, help='RNG seed (default = 0)')
-    parser.add_argument('--epochs', type=int, default=20, help='num epochs to train for')
+    parser.add_argument('--epochs', type=int, default=10, help='num epochs to train for')
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--batch_size', type=int, default=1, help='batch size')
 

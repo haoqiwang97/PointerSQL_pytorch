@@ -332,6 +332,9 @@ def evaluate(test_data: List[Example], decoder, example_freq=50, print_output=Tr
     
     for i, ex in enumerate(test_data):
         pred_y_toks = selected_derivs[i].y_toks if i < len(selected_derivs) else [""]
+        if '<GO>' in ex.y_tok: ex.y_tok.remove('<GO>') # hardcode to remove '<GO>'
+        if '<GO>' in pred_y_toks: pred_y_toks.remove('<GO>') # hardcode to remove '<GO>'
+        
         if print_output and i % example_freq == example_freq - 1:
             print('Example %d' % i)
             print('  x      = "%s"' % ex.x)
