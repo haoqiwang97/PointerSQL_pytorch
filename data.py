@@ -403,7 +403,7 @@ def make_padded_output_tensor(exs, output_indexer, max_len):
          for ex in exs])
 
 
-def evaluate(test_data: List[Example], decoder, example_freq=50, print_output=True, outfile=None):
+def evaluate(test_data: List[Example], decoder, example_freq=20, print_output=True, outfile=None):
     pred_derivations = decoder.decode(test_data)
     selected_derivs = [derivs[0] for derivs in pred_derivations]
     
@@ -414,9 +414,9 @@ def evaluate(test_data: List[Example], decoder, example_freq=50, print_output=Tr
     
     for i, ex in enumerate(test_data):
         pred_y_toks = selected_derivs[i].y_toks if i < len(selected_derivs) else [""]
+        if '<GO>' in ex.y_tok: ex.y_tok.remove('<GO>') # hardcode to remove '<GO>'
+        
         if print_output and i % example_freq == example_freq - 1:
-            
-            if '<GO>' in ex.y_tok: ex.y_tok.remove('<GO>') # hardcode to remove '<GO>'
             print('Example %d' % i)
             print('  x      = "%s"' % ex.x)
             print('  y_tok  = "%s"' % ex.y_tok)
