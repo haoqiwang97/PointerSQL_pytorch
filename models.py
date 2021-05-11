@@ -555,8 +555,8 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
                       beam_size=args.beam_size)
 
     n_epochs = args.epochs
-    # n_exs = all_train_input_data.shape[0]
-    n_exs = 10
+    n_exs = all_train_input_data.shape[0]
+    # n_exs = 10
     lr = args.lr
     batch_size = args.batch_size
 
