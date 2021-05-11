@@ -22,6 +22,9 @@ from torch import autograd
 import time
 
 
+# import sqlvalidator
+
+
 def add_models_args(parser):
     parser.add_argument('--epochs', type=int, default=1, help='num epochs to train for')
     parser.add_argument('--lr', type=float, default=0.001)
@@ -101,6 +104,7 @@ class Seq2Seq(nn.Module):
 
             decoder_input = y_tensor[0, di - 1].unsqueeze(0) if di > 0 else torch.tensor(
                 [self.output_indexer.index_of(SOS_SYMBOL)])
+
             if type == "V":
                 decoder_output, decoder_hidden = self.decoder.forward_pred(self.output_emb.forward(decoder_input),
                                                                            decoder_hidden,
@@ -140,6 +144,7 @@ class Seq2Seq(nn.Module):
                     for beam_state, score in beams[di].get_elts_and_scores():
 
                         y_tokens, decoder_input, decoder_hidden, is_end = beam_state
+
                         if is_end or di == self.decoder_len_limit:
                             end_beam.add(elt=beam_state, score=score)
                             continue
@@ -172,6 +177,28 @@ class Seq2Seq(nn.Module):
                                 y_tokens_new.append(token)
                             elif token == "<EOS>":
                                 is_end = True
+
+                            if di == 0 and token != "select":
+                                continue
+                            elif di == 1:
+                                if token not in {"<GO>", "max", "min", "count", "sum", "avg"}:
+                                    continue
+                            elif di == 3 and token != "from":
+                                continue
+                            elif di == 5 and token != "where":
+                                continue
+                            elif di >= 6 and di % 4 == 3:
+                                if token not in {"=", ">", "<", ">=", "<="}:
+                                    continue
+                            elif di >= 6 and di % 4 == 0 and y_tokens[-1] != "=":
+                                try:
+                                    x = float(token)
+                                except ValueError:
+                                    continue
+                            elif di >= 6 and di % 4 == 1:
+                                if token != "and" and token != "<EOS>":
+                                    continue
+
                             score_new = score + prob
                             if self.output_indexer.index_of(token) != -1:
                                 decoder_input_new = torch.tensor([self.output_indexer.index_of(token)])
@@ -239,7 +266,8 @@ class EmbeddingLayer(nn.Module):
             self.dropout = nn.Dropout(embedding_dropout_rate)
             self.word_embedding = nn.Embedding(full_dict_size, input_dim)
         # self.word_embedding = nn.Embedding.from_pretrained(word_vectors)
-# self.word_embedding
+
+    # self.word_embedding
     def forward(self, input):
         """
         :param input: either a non-batched input [sent len x voc size] or a batched input
@@ -520,7 +548,7 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
     # with autograd.detect_anomaly():
     for epoch_idx in range(n_epochs):
         start = time.time()
-        
+
         ex_indices = [i for i in range(0, n_exs)]
         np.random.shuffle(ex_indices)
         total_loss = 0.0
@@ -578,7 +606,7 @@ def createGrammerIndexer():
     indexer.add_and_get_index("select")
     indexer.add_and_get_index("from")
     indexer.add_and_get_index("where")
-    indexer.add_and_get_index("id")
+    # indexer.add_and_get_index("id")
     indexer.add_and_get_index("max")
     indexer.add_and_get_index("min")
     indexer.add_and_get_index("count")
