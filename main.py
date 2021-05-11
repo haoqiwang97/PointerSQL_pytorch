@@ -21,6 +21,7 @@ def _parse_args():
     parser.add_argument('--word_vecs_path', type=str, default='data/glove.6B.50d-relativized.txt', help='path to word embeddings to use')
     parser.add_argument('--n_gram_path', type=str, default='data/jmt_char_n_gram.txt', help='path to ngrams to use')
     parser.add_argument('--use_pretrained', type=bool, default=False, help='use pretrained word vector or not')
+    # parser.add_argument('--use_pretrained', type=bool, default=True, help='use pretrained word vector or not')
     
     add_models_args(parser) # defined in models.py
     

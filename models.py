@@ -239,7 +239,7 @@ class EmbeddingLayer(nn.Module):
             self.dropout = nn.Dropout(embedding_dropout_rate)
             self.word_embedding = nn.Embedding(full_dict_size, input_dim)
         # self.word_embedding = nn.Embedding.from_pretrained(word_vectors)
-
+# self.word_embedding
     def forward(self, input):
         """
         :param input: either a non-batched input [sent len x voc size] or a batched input
@@ -247,6 +247,7 @@ class EmbeddingLayer(nn.Module):
         :return: embedded form of the input words (last coordinate replaced by input_dim)
         """
         embedded_words = self.word_embedding(input)
+        # input.squeeze()
         # final_embeddings = self.dropout(embedded_words)
         return embedded_words  # final_embeddings
 
