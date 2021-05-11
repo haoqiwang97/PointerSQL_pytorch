@@ -35,7 +35,7 @@ def add_models_args(parser):
     parser.add_argument('--embedding_dropout', type=float, default=0.2, help='embedding layer dropout rate')
     parser.add_argument('--hidden_dim', type=int, default=100, help='hidden layer size')
     parser.add_argument('--n_layers', type=int, default=3, help='number of layers')
-
+    parser.add_argument('--beam_size', type=int, default=5)
 
 """
 # how did I choose decoder_len_limit=15
@@ -551,11 +551,12 @@ def train_model(word_vectors, train_data: List[Example], dev_data: List[Example]
                       output_indexer=output_indexer,
                       emb_dim=args.emb_dim,
                       hidden_dim=args.hidden_dim,
-                      embedding_dropout=args.embedding_dropout)
+                      embedding_dropout=args.embedding_dropout,
+                      beam_size=args.beam_size)
 
     n_epochs = args.epochs
-    n_exs = all_train_input_data.shape[0]
-    # n_exs = 10
+    # n_exs = all_train_input_data.shape[0]
+    n_exs = 10
     lr = args.lr
     batch_size = args.batch_size
 
