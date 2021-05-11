@@ -132,6 +132,7 @@ class Seq2Seq(nn.Module):
                 decoder_hidden = enc_final_states_reshaped
 
                 end_beam = Beam(self.beam_size)
+                error_beam = Beam(self.beam_size)
 
                 beams = [Beam(self.beam_size) for x in range(self.decoder_len_limit + 1)]
                 beams[0].add(elt=([], decoder_input, decoder_hidden, False), score=0.0)
@@ -178,39 +179,57 @@ class Seq2Seq(nn.Module):
                             elif token == "<EOS>":
                                 is_end = True
 
-                            if di == 0 and token != "select":
-                                continue
-                            elif di == 1:
-                                if token not in {"<GO>", "max", "min", "count", "sum", "avg"}:
-                                    continue
-                            elif di == 3 and token != "from":
-                                continue
-                            elif di == 5 and token != "where":
-                                continue
-                            elif di >= 6 and di % 4 == 3:
-                                if token not in {"=", ">", "<", ">=", "<="}:
-                                    continue
-                            elif di >= 6 and di % 4 == 0 and y_tokens[-1] != "=":
-                                try:
-                                    x = float(token)
-                                except ValueError:
-                                    continue
-                            elif di >= 6 and di % 4 == 1:
-                                if token != "and" and token != "<EOS>":
-                                    continue
-
                             score_new = score + prob
                             if self.output_indexer.index_of(token) != -1:
                                 decoder_input_new = torch.tensor([self.output_indexer.index_of(token)])
                             else:
                                 decoder_input_new = torch.tensor([self.output_indexer.index_of(UNK_SYMBOL)])
 
+                            if di == 0 and token != "select":
+                                error_beam.add(elt=(y_tokens_new, decoder_input_new, decoder_hidden, is_end),
+                                               score=score_new)
+                                continue
+                            elif di == 1:
+                                if token not in {"<GO>", "max", "min", "count", "sum", "avg"}:
+                                    error_beam.add(elt=(y_tokens_new, decoder_input_new, decoder_hidden, is_end),
+                                                   score=score_new)
+                                    continue
+                            elif di == 3 and token != "from":
+                                error_beam.add(elt=(y_tokens_new, decoder_input_new, decoder_hidden, is_end),
+                                               score=score_new)
+                                continue
+                            elif di == 5 and token != "where":
+                                error_beam.add(elt=(y_tokens_new, decoder_input_new, decoder_hidden, is_end),
+                                               score=score_new)
+                                continue
+                            elif di >= 6 and di % 4 == 3:
+                                if token not in {"=", ">", "<", ">=", "<="}:
+                                    error_beam.add(elt=(y_tokens_new, decoder_input_new, decoder_hidden, is_end),
+                                                   score=score_new)
+                                    continue
+                            elif di >= 6 and di % 4 == 0 and y_tokens[-1] != "=":
+                                try:
+                                    x = float(token)
+                                except ValueError:
+                                    error_beam.add(elt=(y_tokens_new, decoder_input_new, decoder_hidden, is_end),
+                                                   score=score_new)
+                                    continue
+                            elif di >= 6 and di % 4 == 1:
+                                if token != "and" and token != "<EOS>":
+                                    error_beam.add(elt=(y_tokens_new, decoder_input_new, decoder_hidden, is_end),
+                                                   score=score_new)
+                                    continue
+
                             beams[di + 1].add(elt=(y_tokens_new, decoder_input_new, decoder_hidden, is_end),
-                                              score=score_new)
+                                                  score=score_new)
 
                 test_ex_de = []
-                for beam_state, score in end_beam.get_elts_and_scores():
-                    test_ex_de.append(Derivation(test_ex, exp(score), beam_state[0]))
+                if len(end_beam.get_elts()) > 0:
+                    for beam_state, score in end_beam.get_elts_and_scores():
+                        test_ex_de.append(Derivation(test_ex, exp(score), beam_state[0]))
+                else:
+                    for beam_state, score in error_beam.get_elts_and_scores():
+                        test_ex_de.append(Derivation(test_ex, exp(score), beam_state[0]))
                 test_derives.append(test_ex_de)
                 # print(test_ex_de[0].y_toks)
         return test_derives
