@@ -16,7 +16,9 @@
 └── utils.py
 ```
 
-PointerSQL GitHub: https://github.com/microsoft/PointerSQL
+CS388 NLP final project. Implement PointSQL in pytorch.
+
+PointerSQL GitHub (in TF): https://github.com/microsoft/PointerSQL
 
 - main branch: follow setup in the paper [POINTING OUT SQL QUERIES FROM TEXT](https://www.microsoft.com/en-us/research/wp-content/uploads/2017/11/nl2prog.pdf)
   - put pretrained word vectors in `/data`, uploaded to (Google Drive)[https://drive.google.com/drive/u/1/folders/1Ozk_KIa7NXIBWo2y5dYdmUQEdFAJWAlD]
