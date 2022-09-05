@@ -27,7 +27,7 @@ PointerSQL GitHub (in TF): https://github.com/microsoft/PointerSQL
 - no_pretrained branch: only data changed, the rest are the same as project 2
   - no need to put pretrained word vectors
 
-
+```
 !python3 main.py --epochs=15 --lr=0.01
 
 Namespace(batch_size=1, decoder_len_limit=22, dev_path='data/wikisql_dev_small.dat', emb_dim=100, embedding_dropout=0.2, epochs=15, hidden_dim=100, lr=0.01, n_gram_path='data/jmt_char_n_gram.txt', n_layers=3, test_path='data/wikisql_test.dat', train_path='data/wikisql_train_small.dat', use_pretrained=False, word_vecs_path='data/glove.6B.50d-relativized.txt')
@@ -203,3 +203,4 @@ Example 119
   y_pred = "['select', 'school/club^team', 'from', '1-15621965-8', 'where', 'player', '=', 'wear']"
 Exact logical form matches: 33 / 125 = 0.264
 Token-level accuracy: 800 / 1237 = 0.647
+```
