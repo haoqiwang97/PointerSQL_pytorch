@@ -1,4 +1,6 @@
 # PointerSQL_pytorch
+Report: https://github.com/haoqiwang97/PointerSQL_pytorch/blob/main/CS388_NLP_Final_Project_ACL.pdf
+
 ```
 .
 ├── data
